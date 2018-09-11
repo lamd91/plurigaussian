@@ -253,7 +253,7 @@ def discrete_imshow(faciesGrid):
 	"""
 	# Get discrete colormap
 	cmap = plt.get_cmap('rainbow', np.max(faciesGrid)-np.min(faciesGrid)+1)
-	# Set limits .5 outside true variogRange
+	# Set limits .5 outside true range
 	im = plt.imshow(faciesGrid, cmap=cmap, vmin = np.min(faciesGrid)-.5, vmax = np.max(faciesGrid)+.5, alpha=0.5)
 	# Tell the colorbar to tick at integers
 	cax = plt.colorbar(im, ticks=np.arange(np.min(faciesGrid),np.max(faciesGrid)+1))
