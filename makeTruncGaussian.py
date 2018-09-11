@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import tpg
 import variomodels
 
-# Simulate 2 continuous gaussian realizations
+# Simulate one continuous gaussian realizations
 gaussian = tpg.genGaussianSim_2D(30, 30, 1, 1, 'exponential', 10)
 
 # Display and save each generated gaussian realizations
