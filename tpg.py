@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 def variogram(model, h, sill, range):
 	"""
-	Provides variogram models given type of model, vector of distances, 
+	Provides isotropic variogram models given type of model, vector of distances, sill and range.
 	"""
 
 	if model == "gaussian":
