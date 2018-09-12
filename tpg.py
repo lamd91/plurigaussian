@@ -260,7 +260,6 @@ def discrete_imshow(faciesGrid):
 	im = plt.imshow(faciesGrid, cmap=cmap, vmin = np.min(faciesGrid)-.5, vmax = np.max(faciesGrid)+.5, alpha=0.5)
 	# Tell the colorbar to tick at integers
 	cax = plt.colorbar(im, ticks=np.arange(np.min(faciesGrid),np.max(faciesGrid)+1))
-	plt.show()
 
 
 def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
@@ -357,7 +356,7 @@ class truncLines():
 				plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
 
 		
-			# Plot the 3 intersecting lines
+			# Plot the intersecting lines
 			plt.xlim(-4, 4)
 			plt.ylim(-4, 4)
 			plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
@@ -365,16 +364,17 @@ class truncLines():
 			plt.savefig('truncRules.png')
 #			plt.show()
 
-			# Compute the 3 intersections points
+			# Compute intersections point coordinates
 			inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # between red and green lines
 
 
-#		# Print the coordinates of the 3 intersections points
+#		# Print the coordinates of intersections point
 #		print("Coordinates of intersection points:")
 #		print(inter_RG[0], inter_RG[1])	
 
 def thresholdLineEq(r, teta, x):
-
+	"""
+	"""
 	y = np.tan(teta-pi/2)*(x - r/np.cos(teta)) 
 	
 	return y
@@ -385,6 +385,7 @@ def truncBiGaussian2facies(g1, g2, lines):
 	"""
 	"""
 	faciesGrid = g2
+
 	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
 	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
 	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
