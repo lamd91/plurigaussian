@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import inv
 from scipy.special import erf
 from scipy.optimize import brentq
+from math import pi, radians, degrees
 from matplotlib import pyplot as plt
 
 
@@ -251,12 +252,147 @@ def discrete_imshow(faciesGrid):
 		numpy array filled with discrete values
 
 	"""
+	
+	plt.close()
 	# Get discrete colormap
 	cmap = plt.get_cmap('rainbow', np.max(faciesGrid)-np.min(faciesGrid)+1)
-	# Set limits .5 outside true range
+	# Set limits .5 outside true variogRange
 	im = plt.imshow(faciesGrid, cmap=cmap, vmin = np.min(faciesGrid)-.5, vmax = np.max(faciesGrid)+.5, alpha=0.5)
 	# Tell the colorbar to tick at integers
 	cax = plt.colorbar(im, ticks=np.arange(np.min(faciesGrid),np.max(faciesGrid)+1))
+	plt.show()
+
+
+def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
+
+	"""
+	Function which computes the intersection of 2 segments or return false when the 2 segments don't intersect.
+
+	Parameters
+	----------
+
+
+	Returns
+	-------
+	
+	
+	"""
+
+	xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+	ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+	def det(a, b):
+	    return a[0] * b[1] - a[1] * b[0]
+
+	div = det(xdiff, ydiff)
+	if div == 0:
+		return False # segments do not intersect
+
+	d = (det(*line1), det(*line2))
+	x = det(d, xdiff) / div
+	y = det(d, ydiff) / div
+
+	if x > xmax or x < xmin or y > ymax or y < ymin:
+		return False # segments do not intersect within domain
+		
+	return x, y
+
+
+
+class truncLines():
+
+	def __init__(self):
+
+		nbLines = 2 # number of truncation lines set by default
+		self.angles = np.array([3.0087741, 7.73074376])
+		self.dist2origin = np.array([0.55325674, 0.26806778])
+
+		# Define horizontal and vertical axes of truncation map
+		g1 = np.linspace(-4, 4, 2)
+		g2 = np.linspace(-4, 4, 2)
+
+		# Define 3 random segments each defined by a rotation angle and a distance to the origin
+		plt.close()
+		plt.figure()
+
+		lines = np.zeros((nbLines, g1.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
+		rotationAngles = np.zeros(nbLines) # vector that stores the rotation angle of each random line to be generated
+		distancesToOrigin = np.zeros(nbLines) # vector that stores the rotation angle of each random line to be generated
+
+		# For each line
+		colors = ['r', 'g']
+
+		for i in np.arange(nbLines):
+			
+#			rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi)
+#			distancesToOrigin[i] = np.random.uniform(0, 1)
+			rotationAngles[i] = self.angles[i]
+			distancesToOrigin[i] = self.dist2origin[i]
+			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+
+			plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+
+
+		# Plot the 3 generated lines
+		plt.xlim(-4, 4)
+		plt.ylim(-4, 4)
+		plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.savefig('truncRules.png')
+		#plt.show()
+
+		# Compute the intersections between the 3 lines 
+		inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # tests intersection between red and green lines
+
+		# While there are no 3 intersection points, regenerate the 3 lines
+		while segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4,-4, 4) == False:
+
+			for i in np.arange(nbLines):
+				
+			#	rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi)
+			#	distancesToOrigin[i] = np.random.uniform(0, 1)
+				rotationAngles[i] = self.angles[i]
+				distancesToOrigin[i] = self.dist2origin[i]
+				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+				plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+
+		
+			# Plot the 3 intersecting lines
+			plt.xlim(-4, 4)
+			plt.ylim(-4, 4)
+			plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+			plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+			plt.savefig('truncRules.png')
+#			plt.show()
+
+			# Compute the 3 intersections points
+			inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # between red and green lines
+
+
+#		# Print the coordinates of the 3 intersections points
+#		print("Coordinates of intersection points:")
+#		print(inter_RG[0], inter_RG[1])	
+
+def thresholdLineEq(r, teta, x):
+
+	y = np.tan(teta-pi/2)*(x - r/np.cos(teta)) 
+	
+	return y
+	
+
+def truncBiGaussian2facies(g1, g2, lines):
+
+	"""
+	"""
+	faciesGrid = g2
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
+
+	return faciesGrid
+	
+
 
 
  
