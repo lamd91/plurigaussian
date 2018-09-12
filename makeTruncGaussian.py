@@ -20,4 +20,4 @@ plt.close()
 tpg.discrete_imshow(faciesMap)
 plt.savefig('faciesMap0.png', dpi=300)
 
-tpg.truncRule()
+
