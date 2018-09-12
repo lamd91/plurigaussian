@@ -18,6 +18,6 @@ faciesMap = tpg.truncGaussian2facies(gaussian, 0.3, 0.2, 0.5)
 # Display the derived facies map with a discrete colorbar
 plt.close()
 tpg.discrete_imshow(faciesMap)
-plt.savefig('faciesMap0.png', dpi=300)
+plt.savefig('faciesMap0_afterTG.png', dpi=300)
 
 
