@@ -303,6 +303,7 @@ class truncLines():
 	def __init__(self):
 
 		nbLines = 2 # number of truncation lines set by default
+
 		self.angles = np.array([3.0087741, 7.73074376])
 		self.dist2origin = np.array([0.55325674, 0.26806778])
 
@@ -310,7 +311,7 @@ class truncLines():
 		g1 = np.linspace(-4, 4, 2)
 		g2 = np.linspace(-4, 4, 2)
 
-		# Define 3 random segments each defined by a rotation angle and a distance to the origin
+		# Define random segments each defined by a rotation angle and a distance to the origin
 		plt.close()
 		plt.figure()
 
@@ -332,7 +333,7 @@ class truncLines():
 			plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
 
 
-		# Plot the 3 generated lines
+		# Plot generated lines
 		plt.xlim(-4, 4)
 		plt.ylim(-4, 4)
 		plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
@@ -340,10 +341,10 @@ class truncLines():
 		plt.savefig('truncRules.png')
 		#plt.show()
 
-		# Compute the intersections between the 3 lines 
+		# Compute intersection between lines 
 		inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # tests intersection between red and green lines
 
-		# While there are no 3 intersection points, regenerate the 3 lines
+		# While there are no intersection point, regenerate the two lines
 		while segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4,-4, 4) == False:
 
 			for i in np.arange(nbLines):
@@ -368,9 +369,6 @@ class truncLines():
 			inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # between red and green lines
 
 
-#		# Print the coordinates of intersections point
-#		print("Coordinates of intersection points:")
-#		print(inter_RG[0], inter_RG[1])	
 
 def thresholdLineEq(r, teta, x):
 	"""
