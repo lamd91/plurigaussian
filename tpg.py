@@ -98,7 +98,8 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 	var = 1
 	std = var**(1/2)
 
-	# Cell by cell simulation loop 
+	# Cell by cell simulation loop
+ 
 	while nbCellsLeftToVisit != 0: 
 		
 		flattenedIndex_visitedCell = int(np.floor(np.random.rand()*nbCellsLeftToVisit)) # index of visited cell in flattened array
@@ -265,11 +266,22 @@ def discrete_imshow(faciesGrid):
 def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
 
 	"""
-	Function which computes the intersection of 2 segments or return false when the 2 segments don't intersect.
+	Function which returns the intersection point coordinates of 2 intersecting lines or return false when they do not intersect within the domain delimited
 
 	Parameters
 	----------
+	line1 : tuple of 2 lists of 2 elements
+		
+	
+	line2 : tuple of 2 list of 2 elements
 
+	xmin : float 
+	
+	xmax : float
+
+	ymin : float
+
+	ymax : float
 
 	Returns
 	-------
@@ -304,11 +316,11 @@ class truncLines():
 
 		nbLines = 2 # number of truncation lines set by default #TODO: add third line
 
-		# Define horizontal and vertical axes of truncation map
-		g1 = np.linspace(-4, 4, 2)
-		g2 = np.linspace(-4, 4, 2)
+		# Define endpoints of horizontal and vertical axes of truncation map		
+		x_endpoints = np.linspace(-4, 4, 2)
+		y_endpoints = np.linspace(-4, 4, 2)
 
-		lines = np.zeros((nbLines, g1.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
+		lines = np.zeros((nbLines, x_endpoints.shape[0])) # array that stores the y coordinates of the 2 endpoints of each line to be generated
 
 		# Define random segments each defined by a rotation angle and a distance to the origin
 		plt.close()
@@ -317,45 +329,46 @@ class truncLines():
 		# Set rotation angle and distance to the origin for each line
 #		rotationAngles = np.random.uniform(pi/2, pi/2+2*pi, nbLines) # set randomly
 #		distancesToOrigin = np.random.uniform(0, 1, nbLines)
-		rotationAngles = np.array([3.0087741, 7.73074376]) # set by default
-		distancesToOrigin = np.array([0.55325674, 0.26806778]) 
+		rotationAngles = np.array([3.0, 7.7]) # set by default
+		distancesToOrigin = np.array([0.55, 0.27]) 
 
 		# For each line
 		colors = ['r', 'g']
 		for i in np.arange(nbLines):
-			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-			plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+			plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
 
 
 		# Plot generated lines
-		plt.xlim(-4, 4)
-		plt.ylim(-4, 4)
+		plt.xlim(x_endpoints[0], x_endpoints[1])
+		plt.ylim(y_endpoints[0], y_endpoints[1])
 		plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 		plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
-		plt.savefig('truncRules.png')
+		plt.savefig('truncMap.png')
 
 		# Compute intersection between lines 
-		inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # tests intersection between red and green lines
+		inter_RG = segment_intersection(([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]]), ([x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]]), x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # checks intersection between lines
 
 		# While all the ines don't intersect within domain, regenerate the lines
-		while segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4,-4, 4) == False:
-
+		while inter_RG == False:
+			plt.close()
 			for i in np.arange(nbLines):				
 				rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi) # set randomly
 				distancesToOrigin[i] = np.random.uniform(0, 1)
-				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-				plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+				plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
 		
 			# Plot randomly generated intersecting lines
-			plt.xlim(-4, 4)
-			plt.ylim(-4, 4)
+			plt.xlim(x_endpoints[0], x_endpoints[1])
+			plt.ylim(y_endpoints[0], y_endpoints[1])
 			plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 			plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
-			plt.savefig('truncRules.png')
+			plt.savefig('truncMap.png')
 
-			# Compute intersection point(s)
-			inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # between red and green lines
-		
+			# Compute intersection between lines
+			inter_RG = segment_intersection(([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]]), ([x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]]), x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # checks intersection between lines
+	
+		# Define class attributes
 		self.angles = rotationAngles
 		self.dist2origin = distancesToOrigin
 		self.intersectPoint = inter_RG
@@ -364,7 +377,8 @@ class truncLines():
 def thresholdLineEq(r, teta, x):
 
 	"""
-	Function corresponding threshold line equation 	
+	Affine function corresponding to a threshold line defined by 2 parameters r and teta. 
+	Returns the y coordinate of the point on the threshold line given an x coordinate.
 
 	Parameters
 	----------
@@ -374,11 +388,14 @@ def thresholdLineEq(r, teta, x):
 	teta : float
 		rotation angle in radians 
 
-	x : 
-
-
+	x : float
+		x coordinate
+ 
 	Returns
 	-------
+	y : float
+		y coordinate 
+		
 
 	"""
 
