@@ -302,34 +302,28 @@ class truncLines():
 
 	def __init__(self):
 
-		nbLines = 2 # number of truncation lines set by default
-
-		self.angles = np.array([3.0087741, 7.73074376])
-		self.dist2origin = np.array([0.55325674, 0.26806778])
+		nbLines = 2 # number of truncation lines set by default #TODO: add third line
 
 		# Define horizontal and vertical axes of truncation map
 		g1 = np.linspace(-4, 4, 2)
 		g2 = np.linspace(-4, 4, 2)
 
+		lines = np.zeros((nbLines, g1.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
+
 		# Define random segments each defined by a rotation angle and a distance to the origin
 		plt.close()
 		plt.figure()
-
-		lines = np.zeros((nbLines, g1.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
-		rotationAngles = np.zeros(nbLines) # vector that stores the rotation angle of each random line to be generated
-		distancesToOrigin = np.zeros(nbLines) # vector that stores the rotation angle of each random line to be generated
+			
+		# Set rotation angle and distance to the origin for each line
+#		rotationAngles = np.random.uniform(pi/2, pi/2+2*pi, nbLines) # set randomly
+#		distancesToOrigin = np.random.uniform(0, 1, nbLines)
+		rotationAngles = np.array([3.0087741, 7.73074376]) # set by default
+		distancesToOrigin = np.array([0.55325674, 0.26806778]) 
 
 		# For each line
 		colors = ['r', 'g']
-
 		for i in np.arange(nbLines):
-			
-#			rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi)
-#			distancesToOrigin[i] = np.random.uniform(0, 1)
-			rotationAngles[i] = self.angles[i]
-			distancesToOrigin[i] = self.dist2origin[i]
 			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-
 			plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
 
 
@@ -339,40 +333,55 @@ class truncLines():
 		plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 		plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 		plt.savefig('truncRules.png')
-		#plt.show()
 
 		# Compute intersection between lines 
 		inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # tests intersection between red and green lines
 
-		# While there are no intersection point, regenerate the two lines
+		# While all the ines don't intersect within domain, regenerate the lines
 		while segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4,-4, 4) == False:
 
-			for i in np.arange(nbLines):
-				
-			#	rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi)
-			#	distancesToOrigin[i] = np.random.uniform(0, 1)
-				rotationAngles[i] = self.angles[i]
-				distancesToOrigin[i] = self.dist2origin[i]
+			for i in np.arange(nbLines):				
+				rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi) # set randomly
+				distancesToOrigin[i] = np.random.uniform(0, 1)
 				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
 				plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
-
 		
-			# Plot the intersecting lines
+			# Plot randomly generated intersecting lines
 			plt.xlim(-4, 4)
 			plt.ylim(-4, 4)
 			plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 			plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 			plt.savefig('truncRules.png')
-#			plt.show()
 
-			# Compute intersections point coordinates
+			# Compute intersection point(s)
 			inter_RG = segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4, -4, 4) # between red and green lines
-
+		
+		self.angles = rotationAngles
+		self.dist2origin = distancesToOrigin
+		self.intersectPoint = inter_RG
 
 
 def thresholdLineEq(r, teta, x):
+
 	"""
+	Function corresponding threshold line equation 	
+
+	Parameters
+	----------
+	r : float
+		distance to the origin
+	
+	teta : float
+		rotation angle in radians 
+
+	x : 
+
+
+	Returns
+	-------
+
 	"""
+
 	y = np.tan(teta-pi/2)*(x - r/np.cos(teta)) 
 	
 	return y
@@ -381,9 +390,30 @@ def thresholdLineEq(r, teta, x):
 def truncBiGaussian2facies(g1, g2, lines):
 
 	"""
-	"""
-	faciesGrid = g2
+	Truncates 2 continuous gaussian realizations into 4 facies according to 2 thresholds lines.
+	Returns an array filled with values 1, 2, 3 or 4 corresponding to either of the 4 facies 
+	
+	Parameters
+	----------
+	g1 : ndarray
+		numpy array filled with continuous gaussian values
 
+	g2 : ndarray
+		numpy array filled with continuous gaussian values
+
+	lines : object 
+		truncLines class object with attributes "angles" and "dist2origin"
+		
+ 
+	Returns
+	----------
+	ndarray
+		numpy array of same size as g2 
+	"""
+
+	faciesGrid = g2 # initialize grid for facies simulation after truncation with values of the gaussian realization given as second argument 
+
+	# Assign facies depending on position of pair of gaussian values on truncation map
 	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
 	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
 	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
