@@ -190,6 +190,7 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 		col_gridCells = np.delete(col_gridCells, flattenedIndex_visitedCell)
 		
 		nbCellsLeftToVisit = nbCellsLeftToVisit-1 
+		print(nbCellsLeftToVisit)
 
 	return GRID_gauss
 
