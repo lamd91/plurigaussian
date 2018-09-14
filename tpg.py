@@ -8,7 +8,7 @@ from scipy.special import erf
 from scipy.optimize import brentq
 from math import pi, radians, degrees
 from matplotlib import pyplot as plt
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def variogram(model, h, sill, range):
 	"""
@@ -26,7 +26,6 @@ def variogram(model, h, sill, range):
 
 
 def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
-
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
@@ -52,12 +51,11 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 		range in meters of exponential variogram model
 	
 	Returns
-	----------
+	-------
 	ndarray 
-		numpy array of size NX-1, NY-1
-	
+		numpy array of size NX-1, NY-1	
 	"""
-
+	
 	# Determine the element centroid coordinates of the 2D simulation grid
 
 	x_min = dx/2 # x coordinates of first column of elements
@@ -195,7 +193,6 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 
 
 def truncGaussian2facies(gaussianGrid, p1, p2, p3):
-
 	"""
 	Truncates the continuous gaussian realization into 3 facies according to thresholds calculated based on known facies proportions.
 	Returns an array filled with values 1, 2 or 3 corresponding to either of the 3 facies 
@@ -207,8 +204,10 @@ def truncGaussian2facies(gaussianGrid, p1, p2, p3):
 
 	p1 : float
 		proportion of facies of value 1
+
 	p2 : float
 		proportion of facies of value 2
+
 	p3 : float
 		proportion of facies of value 3
 
@@ -216,7 +215,6 @@ def truncGaussian2facies(gaussianGrid, p1, p2, p3):
 	----------
 	ndarray
 		numpy array of same size as gaussianGrid
-
 	"""
 
 	# Facies proportions (assumed stationary)
@@ -243,7 +241,6 @@ def truncGaussian2facies(gaussianGrid, p1, p2, p3):
 
 
 def discrete_imshow(faciesGrid):
-
 	"""
 	Displays facies map using a discrete colormap with ticks at the centre of each color.
 	
@@ -251,42 +248,50 @@ def discrete_imshow(faciesGrid):
 	----------
 	faciesGrid : ndarray
 		numpy array filled with discrete values
-
 	"""
 	
-	plt.close()
+	fig, ax = plt.subplots()	
+
 	# Get discrete colormap
 	cmap = plt.get_cmap('rainbow', np.max(faciesGrid)-np.min(faciesGrid)+1)
-	# Set limits .5 outside true variogRange
+	# Set limits minus and plus 0.5 outside true range
 	im = plt.imshow(faciesGrid, cmap=cmap, vmin = np.min(faciesGrid)-.5, vmax = np.max(faciesGrid)+.5, alpha=0.5)
-	# Tell the colorbar to tick at integers
-	cax = plt.colorbar(im, ticks=np.arange(np.min(faciesGrid),np.max(faciesGrid)+1))
+	# Match colorbar with grid size
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes("right", size="3%", pad=0.2)
+	# Display colorbar with ticks at discrete values
+	cbar = plt.colorbar(im, cax=cax, ticks=np.arange(np.min(faciesGrid),np.max(faciesGrid)+1))
+	cbar.ax.tick_params(labelsize=5)
 
 
 def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
-
 	"""
 	Function which returns the intersection point coordinates of 2 intersecting lines or return false when they do not intersect within the domain delimited
 
 	Parameters
 	----------
-	line1 : tuple of 2 lists of 2 elements
-		each list contains the x and y coordinates of an endpoint 
+	line1 : tuple of 2 values
+		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of line1 within the grid delimited by [xmin, xmax] and [ymin, ymax]
 	
 	line2 : tuple of 2 list of 2 elements
+		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of line2 within the grid delimited by [xmin, xmax] and [ymin, ymax]
 
 	xmin : float 
-	
+		minimum value on x axis
+
 	xmax : float
+		maximum value on x axis 
 
 	ymin : float
+		minimum value on y axis
 
 	ymax : float
+		maximum value on y axis
 
 	Returns
 	-------
-	
-	
+	tuple of 2 float values
+		x and y coordinates of intersection point
 	"""
 
 	xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
@@ -311,16 +316,19 @@ def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
 
 
 class truncLines():
+	"""
+	Class which attributes are the parameters defining 2 threshold lines.
+	"""
 
 	def __init__(self):
 
 		nbLines = 2 # number of truncation lines set by default #TODO: add third line
 
-		# Define horizontal and vertical axes of truncation map
-		g1 = np.linspace(-4, 4, 2)
-		g2 = np.linspace(-4, 4, 2)
+		# Define endpoints of horizontal and vertical axes of truncation map
+		x_endpoints = np.array([-4, 4]) 
+		y_endpoints = np.array([-4, 4]) 
 
-		lines = np.zeros((nbLines, g1.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
+		lines = np.zeros((nbLines, x_endpoints.shape[0])) # array that stores the 2 endpoints of the 3 random lines to be generated
 
 		# Define random segments each defined by a rotation angle and a distance to the origin
 		plt.close()
@@ -335,46 +343,44 @@ class truncLines():
 		# For each line
 		colors = ['r', 'g']
 		for i in np.arange(nbLines):
-			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-			plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+			plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
 
 
 		# Plot generated lines
-		plt.xlim(-4, 4)
-		plt.ylim(-4, 4)
+		plt.xlim(x_endpoints[0], x_endpoints[1])
+		plt.ylim(y_endpoints[0], y_endpoints[1])
 		plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 		plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 		plt.savefig('truncMap.png')
 
 		# Compute intersection between lines 
-		inter_RG = segment_intersection([g1[0],lines[0,0]], [g1[1], lines[0,1]], [g1[0], lines[1,0]], [g1[1], lines[1,1]], -4, 4, -4, 4) # tests intersection between red and green lines
+		inter_RG = segment_intersection(([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]]), ([x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]]), x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
 
 		# While all the ines don't intersect within domain, regenerate the lines
-		while segment_intersection(([g1[0],lines[0,0]], [g1[1], lines[0,1]]), ([g1[0], lines[1,0]], [g1[1], lines[1,1]]), -4, 4,-4, 4) == False:
+		while inter_RG == False:
 
 			for i in np.arange(nbLines):				
 				rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi) # set randomly
 				distancesToOrigin[i] = np.random.uniform(0, 1)
-				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(g1 - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-				plt.plot(g1, lines[i, :], color=colors[i], alpha=0.5)
+				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
+				plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
 		
 			# Plot randomly generated intersecting lines
-			plt.xlim(-4, 4)
-			plt.ylim(-4, 4)
+			plt.xlim(x_endpoints[0], x_endpoints[1])
+			plt.ylim(y_endpoints[0], y_endpoints[1])
 			plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 			plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
 			plt.savefig('truncMap.png')
 
 			# Compute intersection point(s)
-			inter_RG = segment_intersection([g1[0],lines[0,0]], [g1[1], lines[0,1]], [g1[0], lines[1,0]], [g1[1], lines[1,1]], -4, 4, -4, 4) # tests intersection between red and green lines
+			inter_RG = segment_intersection([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]], [x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]], x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
 		
 		self.angles = rotationAngles
 		self.dist2origin = distancesToOrigin
-		self.intersectPoint = inter_RG
 
 
 def thresholdLineEq(r, teta, x):
-
 	"""
 	Affine function corresponding to a threshold line defined by 2 parameters r and teta. 
 	Returns the y coordinate of the point on the threshold line given an x coordinate.
@@ -394,8 +400,6 @@ def thresholdLineEq(r, teta, x):
 	-------
 	y : float
 		y coordinate 
-		
-
 	"""
 
 	y = np.tan(teta-pi/2)*(x - r/np.cos(teta)) 
@@ -404,7 +408,6 @@ def thresholdLineEq(r, teta, x):
 	
 
 def truncBiGaussian2facies(g1, g2, lines):
-
 	"""
 	Truncates 2 continuous gaussian realizations into 4 facies according to 2 thresholds lines.
 	Returns an array filled with values 1, 2, 3 or 4 corresponding to either of the 4 facies 
