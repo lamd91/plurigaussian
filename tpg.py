@@ -532,7 +532,7 @@ def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
 
 
 
-class truncLines():
+class randTruncLines():
 	"""
 	Class which attributes are the parameters defining 2 threshold lines.
 	"""
@@ -624,9 +624,9 @@ def thresholdLineEq(r, teta, x):
 	return y
 	
 
-def truncBiGaussian2facies(g1, g2, lines):
+def truncBiGaussian24facies(g1, g2, lines):
 	"""
-	Truncates 2 continuous gaussian realizations into 4 facies according to 2 thresholds lines.
+	Truncates 2 continuous gaussian realizations into 4 facies according to 2 random threshold lines.
 	Returns an array filled with values 1, 2, 3 or 4 corresponding to either of the 4 facies 
 	
 	Parameters
@@ -638,7 +638,7 @@ def truncBiGaussian2facies(g1, g2, lines):
 		numpy array filled with continuous gaussian values
 
 	lines : object 
-		truncLines class object with attributes "angles" and "dist2origin"
+		randTuncLines class object with attributes "angles" and "dist2origin"
 		
  
 	Returns
@@ -658,10 +658,10 @@ def truncBiGaussian2facies(g1, g2, lines):
 	return faciesGrid
 	
 
-def truncBiGaussian2facies_val(g1, g2, thres_values):
+def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 	"""
-	Truncates 2 continuous gaussian realizations into 4 facies according to 2 thresholds lines.
-	Returns an array filled with values 1, 2, 3 or 4 corresponding to either of the 4 facies 
+	Truncates 2 continuous gaussian realizations into 3 facies according to 2 threshold values.
+	Returns an array filled with values 1, 2, 3 corresponding to either of the 3 facies 
 	
 	Parameters
 	----------
@@ -669,27 +669,44 @@ def truncBiGaussian2facies_val(g1, g2, thres_values):
 		numpy array filled with continuous gaussian values
 
 	g2 : ndarray
-		numpy array filled with continuous gaussian values
+		numpy array filled with continuous gaussian values. g1 and g2 must have the same size.
 
-	lines : object 
-		truncLines class object with attributes "angles" and "dist2origin"
+	rule_type : integer
 		
- 
+	thresholds : list of 2 floats
+
+
 	Returns
 	-------
 	ndarray
-		numpy array of same size as g2 
+		numpy array of same size as g1 or g2 
 	"""
 
-	faciesGrid = g2 # initialize grid for facies simulation after truncation with values of the gaussian realization given as second argument 
+	g1_flattened = g1.reshape(1, -1)
+	g2_flattened = g2.reshape(1, -1)
+	faciesGrid = np.zeros((g1.shape[0], g1.shape[1])) # initialize grid for facies simulation  
+
+	if rule_type == 1:
+		coord_facies1 = np.unravel_index(np.where(g1_flattened < thresholds[0]), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+
+	elif rule_type == 2:
+		coord_facies1 = np.unravel_index(np.where(g2_flattened > thresholds[1]), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+
+	elif rule_type == 3:				
+		coord_facies1 = np.unravel_index(np.where(g1_flattened > thresholds[0]), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
 
 	# Assign facies depending on position of pair of gaussian values on truncation map
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
+	faciesGrid[coord_facies1[0], coord_facies1[1]] = 1
+	faciesGrid[coord_facies2[0], coord_facies2[1]]  = 2
+	faciesGrid[coord_facies3[0], coord_facies3[1]]  = 3
 
 	return faciesGrid
 
 
- 
+
