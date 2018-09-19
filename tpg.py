@@ -597,6 +597,7 @@ class randTruncLines():
 		self.dist2origin = distancesToOrigin
 
 
+
 def thresholdLineEq(r, teta, x):
 	"""
 	Affine function corresponding to a threshold line defined by 2 parameters r and teta. 
@@ -638,7 +639,7 @@ def truncBiGaussian24facies(g1, g2, lines):
 		numpy array filled with continuous gaussian values
 
 	lines : object 
-		randTuncLines class object with attributes "angles" and "dist2origin"
+		randTruncLines class object with attributes "angles" and "dist2origin"
 		
  
 	Returns
@@ -655,8 +656,54 @@ def truncBiGaussian24facies(g1, g2, lines):
 	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
 	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
 
+	# Compute proportion of each facies
+	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
+	prop_facies2 = faciesGrid.reshape(-1).tolist().count(2)/faciesGrid.size*100
+	prop_facies3 = faciesGrid.reshape(-1).tolist().count(3)/faciesGrid.size*100
+	prop_facies4 = faciesGrid.reshape(-1).tolist().count(4)/faciesGrid.size*100
+	print('Proportion of facies 1: %d%% ' % prop_facies1)
+	print('Proportion of facies 2: %d%% ' % prop_facies2)
+	print('Proportion of facies 3: %d%% ' % prop_facies3)
+	print('Proportion of facies 4: %d%% ' % prop_facies4)
+
 	return faciesGrid
 	
+
+def makeTruncMap(g1, g2, rule_type, thresholds):
+	"""
+	Plot truncation map and couple of gaussian values
+	"""
+	
+	# Define endpoints of horizontal and vertical axes of truncation map
+	x_endpoints = np.array([-4, 4]) 
+	y_endpoints = np.array([-4, 4]) 
+	
+	# Define random segments each defined by a rotation angle and a distance to the origin
+	plt.close()
+	plt.figure()
+
+
+	plt.scatter(g1, g2, color='b', marker='.', alpha=0.5) # plot gaussian couples
+
+	# Plot threshold lines
+	if rule_type == 1:
+		plt.axvline(x=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.axhline(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+	
+	elif rule_type == 2:
+		plt.axvline(x=thresholds[0], ymin=y_endpoints[0], ymax=thresholds[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.axhline(y=thresholds[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+	
+	elif rule_type == 3:
+		plt.axvline(x=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.axhline(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+
+	plt.xlim(x_endpoints[0], x_endpoints[1])
+	plt.ylim(y_endpoints[0], y_endpoints[1])
+	plt.axhline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+	plt.axvline(color='k', alpha=0.8, linestyle='--', linewidth=0.2)
+	plt.savefig('truncMap.png')
+
 
 def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 	"""
@@ -684,8 +731,10 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 
 	g1_flattened = g1.reshape(1, -1)
 	g2_flattened = g2.reshape(1, -1)
+	makeTruncMap(g1, g2, rule_type, thresholds) # plot truncation map and couple of gaussian values
 	faciesGrid = np.zeros((g1.shape[0], g1.shape[1])) # initialize grid for facies simulation  
 
+	# Assign facies depending on position of pair of gaussian values on truncation map
 	if rule_type == 1:
 		coord_facies1 = np.unravel_index(np.where(g1_flattened < thresholds[0]), (g1.shape[0], g1.shape[1]))
 		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
@@ -701,10 +750,17 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
 		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
 
-	# Assign facies depending on position of pair of gaussian values on truncation map
 	faciesGrid[coord_facies1[0], coord_facies1[1]] = 1
 	faciesGrid[coord_facies2[0], coord_facies2[1]]  = 2
 	faciesGrid[coord_facies3[0], coord_facies3[1]]  = 3
+
+	# Compute proportion of each facies
+	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
+	prop_facies2 = faciesGrid.reshape(-1).tolist().count(2)/faciesGrid.size*100
+	prop_facies3 = faciesGrid.reshape(-1).tolist().count(3)/faciesGrid.size*100
+	print('Proportion of facies 1: %d%% ' % prop_facies1)
+	print('Proportion of facies 2: %d%% ' % prop_facies2)
+	print('Proportion of facies 3: %d%% ' % prop_facies3)
 
 	return faciesGrid
 
