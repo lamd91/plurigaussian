@@ -709,6 +709,4 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 	return faciesGrid
 
 
-def genTruncMap():
 
-	return
