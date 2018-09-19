@@ -17,6 +17,7 @@ divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="3%", pad=0.2)
 cbar = plt.colorbar(im, cax=cax)
 cbar.ax.tick_params(labelsize=5)
+np.savetxt('gaussian1.txt', gaussian1)
 plt.savefig('gaussian1.png', dpi=300)
 
 plt.close()
@@ -26,7 +27,8 @@ divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="3%", pad=0.2)
 cbar = plt.colorbar(im, cax=cax)
 cbar.ax.tick_params(labelsize=5)
-plt.savefig('gaussian2.png', dpi=300)
+np.savetxt('gaussian2.txt', gaussian2)
+lt.savefig('gaussian2.png', dpi=300)
 plt.close()
 
 # Truncate according to given rock type rule 
