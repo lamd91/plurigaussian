@@ -5,11 +5,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-# Simulate two continuous gaussian realizations using different variogram models
-gaussian1 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 15, 0.3, 0)
-gaussian2 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
+# Generate two continuous gaussian realizations using different variogram models
+#gaussian1 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 15, 0.3, 0)
+#gaussian2 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
 
-# Display each generated gaussian realizations
+gaussian1 = np.loadtxt('gaussian1.txt') # to load preexisting files of gaussian realizations
+gaussian2 = np.loadtxt('gaussian2.txt')
+
+# Display each gaussian realization
 plt.close()
 fig, ax = plt.subplots()
 im = plt.imshow(gaussian1, origin='lower', cmap='rainbow')
@@ -34,7 +37,7 @@ plt.close()
 # Truncate according to given rock type rule 
 #thresholdLines = tpg.randTruncLines() # generate two random threshold lines 
 #faciesMap = tpg.truncBiGaussian24facies(gaussian1, gaussian2, thresholdLines) # thresholds given as lines
-faciesMap = tpg.truncBiGaussian23facies(gaussian1, gaussian2, 2, [-1, 0]) # thresholds given as list of values
+faciesMap = tpg.truncBiGaussian23facies(gaussian1, gaussian2, 2, [-0.5, 0,2]) # thresholds given as list of values
 
 # Display the derived facies map with a discrete colorbar 
 plt.close()
