@@ -683,20 +683,20 @@ def makeTruncMap(g1, g2, rule_type, thresholds):
 	plt.figure()
 
 
-	plt.scatter(g1, g2, color='b', marker='.', alpha=0.5) # plot gaussian couples
+	plt.scatter(g1, g2, s=4, color='c', marker='o', alpha=0.3) # plot gaussian couples
 
 	# Plot threshold lines
 	if rule_type == 1:
-		plt.axvline(x=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
-		plt.axhline(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.vlines(x=thresholds[0], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 2:
-		plt.axvline(x=thresholds[0], ymin=y_endpoints[0], ymax=thresholds[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
-		plt.axhline(y=thresholds[1], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=thresholds[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 3:
-		plt.axvline(x=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
-		plt.axhline(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], color='r', alpha=0.8, linestyle='--', linewidth=0.2)
+		plt.vlines(x=thresholds[0], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], color='r', alpha=0.7, linestyle='-', linewidth=2)
 
 	plt.xlim(x_endpoints[0], x_endpoints[1])
 	plt.ylim(y_endpoints[0], y_endpoints[1])
