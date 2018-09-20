@@ -28,7 +28,7 @@ def variogram(model, h, sill, L):
 
 def variogram_aniso(model, h_x, h_y, sill, range_max, aniso_ratio, angle):
 	"""
-	Provides anisotropic variogram models given type of model, vector of distances, sill, maximum range, anisotropy ratio, counterclockwise rotation angle.
+	Provides anisotropic variogram models given type of model, vector of horizontal component of distances, vector of vertical component of distances,  sill, maximum range, anisotropy ratio, counterclockwise rotation angle.
 	"""
 
 	R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])	# rotation matrix (angles are measured counterclockwise from east)
