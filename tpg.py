@@ -674,22 +674,22 @@ def truncBiGaussian24facies(g1, g2, lines):
 	faciesGrid = g2 # initialize grid for facies simulation after truncation with values of the gaussian realization given as second argument 
 
 	# Assign facies depending on position of pair of gaussian values on truncation map
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < 
-		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > 
-		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > 
-		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < 
-		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
-		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], 
+		np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], 
+		np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], 
+		np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], 
+		np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & 
+		(g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
 
 	# Compute proportion of each facies
 	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
