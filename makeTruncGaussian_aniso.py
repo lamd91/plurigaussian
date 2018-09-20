@@ -20,7 +20,7 @@ cbar.ax.tick_params(labelsize=5)
 plt.savefig('gaussian.png', dpi=300)
 
 # Truncate the gaussian realization into 3 facies according to facies proportions
-faciesMap = tpg_aniso.truncGaussian2facies(gaussian, 0.3, 0.2, 0.5)
+faciesMap = tpg.truncGaussian2facies(gaussian, 0.3, 0.2, 0.5)
 
 # Display the derived facies map with a discrete colorbar
 plt.close()
