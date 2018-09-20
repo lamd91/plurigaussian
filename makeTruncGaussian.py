@@ -8,6 +8,8 @@ import tpg
 # Simulate one continuous gaussian realization
 gaussian = tpg.genGaussianSim_2D(30, 30, 1, 1, 'exponential', 10)
 #gaussian = tpg.genGaussianSim_2D(60, 60, 0.5, 0.5, 'spherical', 10)
+#gaussian = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
+#gaussian = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'spherical', 10, 0.5, 135)
 
 # Display generated gaussian realization
 plt.close()
