@@ -37,7 +37,8 @@ vector of vertical component of distances,  sill, maximum range, anisotropy rati
 
 	h = norm(np.transpose(np.hstack((h_x, h_y))), axis=0)
 	h_reduced = norm(np.dot(T, np.dot(R, np.transpose(np.hstack((h_x, h_y))))), 2, axis=0) # equal to ratio h/range
-	range = h*range_max*range_max*aniso_ratio/norm(np.dot(np.diag(np.array([range_max*aniso_ratio, range_max])), np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0) 
+	range = h*range_max*range_max*aniso_ratio/norm(np.dot(np.diag(np.array([range_max*aniso_ratio, range_max])), 
+np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0) 
 
 	if model == "gaussian":
 		return sill * (1 - np.exp(-(3**(1/2) * h_reduced)**2))
@@ -139,9 +140,12 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 		yCoordWindow_north = yCoord_visitedCell + variogRange
 		yCoordWindow_south = yCoord_visitedCell - variogRange
 
-		indices_xCoord_alreadyVisitedCells = np.where((xCoord_alreadyVisitedCells_array < xCoordWindow_east) & (xCoord_alreadyVisitedCells_array > xCoordWindow_west))
-		indices_yCoord_alreadyVisitedCells = np.where((yCoord_alreadyVisitedCells_array < yCoordWindow_north) & (yCoord_alreadyVisitedCells_array > yCoordWindow_south))
-		indices_alreadyVisitedCellsInsideWindow = np.intersect1d(indices_xCoord_alreadyVisitedCells, indices_yCoord_alreadyVisitedCells)
+		indices_xCoord_alreadyVisitedCells = np.where((xCoord_alreadyVisitedCells_array < xCoordWindow_east) &
+ (xCoord_alreadyVisitedCells_array > xCoordWindow_west))
+		indices_yCoord_alreadyVisitedCells = np.where((yCoord_alreadyVisitedCells_array < yCoordWindow_north) &
+ (yCoord_alreadyVisitedCells_array > yCoordWindow_south))
+		indices_alreadyVisitedCellsInsideWindow = np.intersect1d(indices_xCoord_alreadyVisitedCells, 
+indices_yCoord_alreadyVisitedCells)
 
 		xCoord_alreadyVisitedCells_withinNeighborhood = [] # list to store the x-coordinates of the already simulated cells within the neighbordhood defined around the simulation cell (cercle of radius equal to the variogRange of the variogram)
 		yCoord_alreadyVisitedCells_withinNeighborhood = []
@@ -149,7 +153,8 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 		distancesToAlreadyVisitedCells_withinNeighborhood = [] # list containing the distances between the simulation cell and the already simulated ones
 		
 		for k in indices_alreadyVisitedCellsInsideWindow: # loop over simulated cells in the neighborhood of simulation cell
-			dist = ((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)**2 + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)**2)**(1/2) 
+			dist = ((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)**2 + 
+(yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)**2)**(1/2) 
 			if dist <= variogRange: # if already simulated point is within the cercle centered at simulation cell (neighborhood)
 				xCoord_alreadyVisitedCells_withinNeighborhood.append(xCoord_alreadyVisitedCells[k])
 				yCoord_alreadyVisitedCells_withinNeighborhood.append(yCoord_alreadyVisitedCells[k])
@@ -171,11 +176,15 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 			C = np.zeros((nbOfSimulatedCellsWithinNeighbd, nbOfSimulatedCellsWithinNeighbd))
 	
 			for i in np.arange(nbOfSimulatedCellsWithinNeighbd): # fill covariance matrix line by line
-				distBetweenPairsOfSimulatedPoints = ((xCoord_alreadyVisitedCells_withinNeighborhood - np.repeat(xCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2 + (yCoord_alreadyVisitedCells_withinNeighborhood - np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2)**(1/2)
+				distBetweenPairsOfSimulatedPoints = ((xCoord_alreadyVisitedCells_withinNeighborhood - 
+					np.repeat(xCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2 + 
+					(yCoord_alreadyVisitedCells_withinNeighborhood - 
+					np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2)**(1/2)
 				C[i, :] = C0 - variogram(varioType, distBetweenPairsOfSimulatedPoints, C0, variogRange)
 
 			# Define the vector of spatial correlations between the simulation cell and the already simulated points within the neighborhood
-			cov_vector = C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)
+			cov_vector = C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, 
+				variogRange)
 
 			# Computation of the kriging weights lambdas	
 			lambdas = np.dot(inv(C), cov_vector)
@@ -185,7 +194,8 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
 		
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
-			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
+			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), 
+				C0, variogRange)))
 			sig = var**(1/2)	
 
 
@@ -319,9 +329,12 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 		yCoordWindow_north = yCoord_visitedCell + variogRange_max
 		yCoordWindow_south = yCoord_visitedCell - variogRange_max
 
-		indices_xCoord_alreadyVisitedCells = np.where((xCoord_alreadyVisitedCells_array < xCoordWindow_east) & (xCoord_alreadyVisitedCells_array > xCoordWindow_west))
-		indices_yCoord_alreadyVisitedCells = np.where((yCoord_alreadyVisitedCells_array < yCoordWindow_north) & (yCoord_alreadyVisitedCells_array > yCoordWindow_south))
-		indices_alreadyVisitedCellsInsideWindow = np.intersect1d(indices_xCoord_alreadyVisitedCells, indices_yCoord_alreadyVisitedCells)
+		indices_xCoord_alreadyVisitedCells = np.where((xCoord_alreadyVisitedCells_array < xCoordWindow_east) & 
+			(xCoord_alreadyVisitedCells_array > xCoordWindow_west))
+		indices_yCoord_alreadyVisitedCells = np.where((yCoord_alreadyVisitedCells_array < yCoordWindow_north) & 
+			(yCoord_alreadyVisitedCells_array > yCoordWindow_south))
+		indices_alreadyVisitedCellsInsideWindow = np.intersect1d(indices_xCoord_alreadyVisitedCells, 
+			indices_yCoord_alreadyVisitedCells)
 
 		xCoord_alreadyVisitedCells_withinNeighborhood = [] # list to store the x-coordinates of the already simulated cells within the neighbordhood defined around the simulation cell (cercle of radius equal to the variogRange of the variogram)
 		yCoord_alreadyVisitedCells_withinNeighborhood = []
@@ -331,7 +344,6 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 		
 		for k in indices_alreadyVisitedCellsInsideWindow: # loop over simulated cells in the neighborhood of simulation cell
 			D = (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.cos(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.sin(angle))/variogRange_max)**2 + ((-(xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.sin(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.cos(angle))/variogRange_min)**2
-#			D = (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.cos(angle) - (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.sin(angle))/variogRange_max)**2 + (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.sin(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.cos(angle))/variogRange_min)**2
 			if D <= 1: # if already simulated point is within the cercle centered at simulation cell (neighborhood)
 				xCoord_alreadyVisitedCells_withinNeighborhood.append(xCoord_alreadyVisitedCells[k])
 				yCoord_alreadyVisitedCells_withinNeighborhood.append(yCoord_alreadyVisitedCells[k])
@@ -376,7 +388,10 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
 		
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
-			var = C0 - np.sum(lambdas*(C0 - variogram_aniso(varioType, np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), C0, variogRange_max, aniso_ratio, angle)))
+			var = C0 - np.sum(lambdas*(C0 - variogram_aniso(varioType, 
+				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), 
+				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), C0, variogRange_max, 
+				aniso_ratio, angle)))
 			sig = var**(1/2)	
 
 
@@ -578,7 +593,9 @@ class randTruncLines():
 		plt.savefig('truncMap.png')
 
 		# Compute intersection between lines 
-		inter_RG = segment_intersection(([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]]), ([x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]]), x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
+		inter_RG = segment_intersection(([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]]), 
+			([x_endpoints[0], lines[1,0]],[x_endpoints[1], lines[1,1]]), x_endpoints[0], x_endpoints[1], 
+			y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
 
 		# While all the ines don't intersect within domain, regenerate the lines
 		while inter_RG == False:
@@ -597,7 +614,9 @@ class randTruncLines():
 			plt.savefig('truncMap.png')
 
 			# Compute intersection point(s)
-			inter_RG = segment_intersection([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]], [x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]], x_endpoints[0], x_endpoints[1], y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
+			inter_RG = segment_intersection([x_endpoints[0], lines[0,0]], [x_endpoints[1], lines[0,1]], 
+				[x_endpoints[0], lines[1,0]], [x_endpoints[1], lines[1,1]], x_endpoints[0], x_endpoints[1], 
+				y_endpoints[0], y_endpoints[1]) # tests intersection between red and green lines
 		
 		self.angles = rotationAngles
 		self.dist2origin = distancesToOrigin
@@ -657,10 +676,22 @@ def truncBiGaussian24facies(g1, g2, lines):
 	faciesGrid = g2 # initialize grid for facies simulation after truncation with values of the gaussian realization given as second argument 
 
 	# Assign facies depending on position of pair of gaussian values on truncation map
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
-	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
-	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < 
+		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 1
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > 
+		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 > 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 2
+	faciesGrid[np.where((g2 > thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 > 
+		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 3	
+	faciesGrid[np.where((g2 < thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[0], np.where((g2 < 
+		thresholdLineEq(lines.dist2origin[0], lines.angles[0], g1)) & (g2 < 
+		thresholdLineEq(lines.dist2origin[1], lines.angles[1], g1)))[1]] = 4	
 
 	# Compute proportion of each facies
 	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
@@ -692,16 +723,22 @@ def makeTruncMap(g1, g2, rule_type, thresholds):
 
 	# Plot threshold lines
 	if rule_type == 1:
-		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
-		plt.hlines(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1],
+			 color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], 
+			color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 2:
-		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=thresholds[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
-		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=thresholds[1], 
+			color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=x_endpoints[1], 
+			color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 3:
-		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
-		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], color='r', alpha=0.7, linestyle='-', linewidth=2)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1], 
+			color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], 
+			color='r', alpha=0.7, linestyle='-', linewidth=2)
 
 	plt.xlim(x_endpoints[0], x_endpoints[1])
 	plt.ylim(y_endpoints[0], y_endpoints[1])
@@ -743,18 +780,24 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 	# Assign facies depending on position of pair of gaussian values on truncation map
 	if rule_type == 1:
 		coord_facies1 = np.unravel_index(np.where(g1_flattened < thresholds[0]), (g1.shape[0], g1.shape[1]))
-		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
-		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), 
+			np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), 
+			np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
 
 	elif rule_type == 2:
 		coord_facies1 = np.unravel_index(np.where(g2_flattened > thresholds[1]), (g1.shape[0], g1.shape[1]))
-		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
-		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), 
+			np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened > thresholds[0]), 
+			np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
 
 	elif rule_type == 3:				
 		coord_facies1 = np.unravel_index(np.where(g1_flattened > thresholds[0]), (g1.shape[0], g1.shape[1]))
-		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
-		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies2 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), 
+			np.where(g2_flattened > thresholds[1])), (g1.shape[0], g1.shape[1]))
+		coord_facies3 = np.unravel_index(np.intersect1d(np.where(g1_flattened < thresholds[0]), 
+			np.where(g2_flattened < thresholds[1])), (g1.shape[0], g1.shape[1]))
 
 	faciesGrid[coord_facies1[0], coord_facies1[1]] = 1
 	faciesGrid[coord_facies2[0], coord_facies2[1]]  = 2
