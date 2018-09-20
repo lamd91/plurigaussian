@@ -561,7 +561,7 @@ class randTruncLines():
 		colors = ['r', 'g']
 		for i in np.arange(nbLines):
 			lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-			plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
+			plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.7, linewidth=2)
 
 
 		# Plot generated lines
@@ -581,7 +581,7 @@ class randTruncLines():
 				rotationAngles[i] = np.random.uniform(pi/2, pi/2+2*pi) # set randomly
 				distancesToOrigin[i] = np.random.uniform(0, 1)
 				lines[i, :] = np.tan(rotationAngles[i]-pi/2)*(x_endpoints - distancesToOrigin[i]/np.cos(rotationAngles[i]))
-				plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.5)
+				plt.plot(x_endpoints, lines[i, :], color=colors[i], alpha=0.7, linewidth=2)
 		
 			# Plot randomly generated intersecting lines
 			plt.xlim(x_endpoints[0], x_endpoints[1])
@@ -682,12 +682,11 @@ def makeTruncMap(g1, g2, rule_type, thresholds):
 	plt.close()
 	plt.figure()
 
-
 	plt.scatter(g1, g2, s=4, color='c', marker='o', alpha=0.3) # plot gaussian couples
 
 	# Plot threshold lines
 	if rule_type == 1:
-		plt.vlines(x=thresholds[0], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 		plt.hlines(y=thresholds[1], xmin=thresholds[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 2:
@@ -695,7 +694,7 @@ def makeTruncMap(g1, g2, rule_type, thresholds):
 		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=x_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 	
 	elif rule_type == 3:
-		plt.vlines(x=thresholds[0], color='r', linestyle='-', linewidth=2, alpha=0.7)
+		plt.vlines(x=thresholds[0], ymin=y_endpoints[0], ymax=y_endpoints[1], color='r', linestyle='-', linewidth=2, alpha=0.7)
 		plt.hlines(y=thresholds[1], xmin=x_endpoints[0], xmax=thresholds[0], color='r', alpha=0.7, linestyle='-', linewidth=2)
 
 	plt.xlim(x_endpoints[0], x_endpoints[1])
