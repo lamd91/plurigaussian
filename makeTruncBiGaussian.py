@@ -6,11 +6,8 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Generate two continuous gaussian realizations using different variogram models
-#gaussian1 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 15, 0.3, 0)
-#gaussian2 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'spherical', 10, 0.5, 45)
-
-gaussian1 = np.loadtxt('gaussian1.txt') # to load preexisting files of gaussian realizations
-gaussian2 = np.loadtxt('gaussian2.txt')
+gaussian1 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 15, 0.3, 0)
+gaussian2 = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'spherical', 10, 0.5, 45)
 
 # Display each gaussian realization
 plt.close()
