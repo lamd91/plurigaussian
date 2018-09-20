@@ -671,7 +671,7 @@ def truncBiGaussian24facies(g1, g2, lines):
 
 def makeTruncMap(g1, g2, rule_type, thresholds):
 	"""
-	Plot truncation map and couple of gaussian values
+	Plot truncation map and couples of simulated gaussian values
 	"""
 	
 	# Define endpoints of horizontal and vertical axes of truncation map
@@ -718,9 +718,10 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 		numpy array filled with continuous gaussian values. g1 and g2 must have the same size.
 
 	rule_type : integer
-		
-	thresholds : list of 2 floats
+		value is equal to either 1, 2 or 3, depending on type of truncation map
 
+	thresholds : list of 2 floats
+		first float corresponds to threshold value for g1, second float corresponds to threshold value for g2
 
 	Returns
 	-------
