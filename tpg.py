@@ -28,7 +28,8 @@ def variogram(model, h, sill, L):
 
 def variogram_aniso(model, h_x, h_y, sill, range_max, aniso_ratio, angle):
 	"""
-	Provides anisotropic variogram models given type of model, vector of horizontal component of distances, vector of vertical component of distances,  sill, maximum range, anisotropy ratio, counterclockwise rotation angle.
+	Provides anisotropic variogram models given type of model, vector of horizontal component of distances, 
+vector of vertical component of distances,  sill, maximum range, anisotropy ratio, counterclockwise rotation angle.
 	"""
 
 	R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])	# rotation matrix (angles are measured counterclockwise from east)
@@ -249,7 +250,8 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 		anisotropy ratio such that L_max * aniso_ratio is equal to the minor axis of ellipse
 
 	angle_degrees : float 
-		counterclockwise angle of rotation of ellipse, in degrees, from the east direction of cartesian coordinate system
+		counterclockwise angle of rotation of ellipse, in degrees, from the east direction of cartesian
+ coordinate system
 
 	Returns
 	-------
@@ -411,7 +413,8 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 
 def truncGaussian2facies(gaussianGrid, p1, p2, p3):
 	"""
-	Truncates the continuous gaussian realization into 3 facies according to thresholds calculated based on known facies proportions.
+	Truncates the continuous gaussian realization into 3 facies according to thresholds calculated based on 
+known facies proportions.
 	Returns an array filled with values 1, 2 or 3 corresponding to either of the 3 facies 
 	
 	Parameters
@@ -483,15 +486,18 @@ def discrete_imshow(faciesGrid):
 
 def segment_intersection(line1, line2, xmin, xmax, ymin, ymax):
 	"""
-	Function which returns the intersection point coordinates of 2 intersecting lines or return false when they do not intersect within the domain delimited
+	Function which returns the intersection point coordinates of 2 intersecting lines or return false when
+ they do not intersect within the domain delimited
 
 	Parameters
 	----------
 	line1 : tuple of 2 values
-		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of line1 within the grid delimited by [xmin, xmax] and [ymin, ymax]
+		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of 
+line1 within the grid delimited by [xmin, xmax] and [ymin, ymax]
 	
 	line2 : tuple of 2 list of 2 elements
-		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of line2 within the grid delimited by [xmin, xmax] and [ymin, ymax]
+		each value is a list of 2 elements corresponding to the x and y coordinates of an endpoint of 
+line2 within the grid delimited by [xmin, xmax] and [ymin, ymax]
 
 	xmin : float 
 		minimum value on x axis
