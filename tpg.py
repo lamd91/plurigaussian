@@ -194,8 +194,8 @@ indices_yCoord_alreadyVisitedCells)
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
 		
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
-			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), 
-				C0, variogRange)))
+			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, 
+				np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
 			sig = var**(1/2)	
 
 
@@ -370,15 +370,13 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 				distBetweenPairsOfSimulatedPoints_y = yCoord_alreadyVisitedCells_withinNeighborhood - np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd)
 				C[i, :] = C0 - variogram_aniso(varioType, distBetweenPairsOfSimulatedPoints_x.reshape(-1,1), distBetweenPairsOfSimulatedPoints_y.reshape(-1,1), C0, variogRange_max, aniso_ratio, angle)
 
-#			for i in np.arange(nbOfSimulatedCellsWithinNeighbd): # fill covariance matrix cell by cell
-#				for j in np.arange(nbOfSimulatedCellsWithinNeighbd):
-#					distBetweenPairsOfSimulatedPoints_x = xCoord_alreadyVisitedCells_withinNeighborhood[j] - xCoord_alreadyVisitedCells_withinNeighborhood[i]
-#					distBetweenPairsOfSimulatedPoints_y = yCoord_alreadyVisitedCells_withinNeighborhood[j] - yCoord_alreadyVisitedCells_withinNeighborhood[i]
-#					C[i, j] = C0 - variogram_aniso(varioType, distBetweenPairsOfSimulatedPoints_x.reshape(-1,1), distBetweenPairsOfSimulatedPoints_y.reshape(-1,1), C0, variogRange_max, aniso_ratio, angle)
 	
 			# Define the vector of spatial correlations between the simulation cell and the already simulated points within the neighborhood			
 
-			cov_vector = C0 - variogram_aniso(varioType, np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), C0, variogRange_max, aniso_ratio, angle)
+			cov_vector = C0 - variogram_aniso(varioType, 
+				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), 
+				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), 
+				C0, variogRange_max, aniso_ratio, angle)
 
 			# Computation of the kriging weights lambdas	
 			lambdas = np.dot(inv(C), cov_vector)
