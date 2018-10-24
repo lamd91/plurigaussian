@@ -3,13 +3,13 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from myFunctions import makeFlowParFileForGW
 import tpg
 
+
 # Simulate one continuous gaussian realization
-gaussian = tpg.genGaussianSim_2D(30, 30, 1, 1, 'exponential', 10)
-#gaussian = tpg.genGaussianSim_2D(60, 60, 0.5, 0.5, 'spherical', 10)
-#gaussian = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
-#gaussian = tpg.genGaussianSim_2D_aniso(120, 120, 0.5, 0.5, 'spherical', 10, 0.5, 135)
+gaussian = tpg.genGaussian2DSim_SGSim_iso(30, 30, 1, 1, 'exponential', 10)
+#gaussian = tpg.genGaussian2DSim_SGSim_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
 
 # Display generated gaussian realization
 plt.close()
@@ -22,11 +22,10 @@ cbar.ax.tick_params(labelsize=5)
 plt.savefig('gaussian.png', dpi=300)
 
 # Truncate the gaussian realization into 3 facies according to facies proportions
-faciesMap = tpg.truncGaussian2facies(gaussian, 0.3, 0.2, 0.5)
+faciesMap, thresholds = tpg.truncGaussian2facies(gaussian, 0.3, 0.2, 0.5)
 
 # Display the derived facies map with a discrete colorbar
 plt.close()
 tpg.discrete_imshow(faciesMap)
 plt.savefig('faciesMap.png', dpi=300)
-
 
