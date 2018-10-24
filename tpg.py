@@ -3,12 +3,73 @@
 # Library containing useful functions for the generation of Truncated Pluri-Gaussian Simulations (TPG)
 
 import numpy as np
-from numpy.linalg import inv, norm
+from numpy.linalg import inv, norm, lstsq
+from scipy.spatial.distance import squareform, pdist
+from scipy.linalg import solve
 from scipy.special import erf
 from scipy.optimize import brentq
 from math import pi, radians, degrees
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
+def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
+	"""
+	Simple kriging implementation
+	Arguments:
+	x, y, v: data points
+	xi, yi: the points where kriging interpolation is requested
+	covmodel: covariance model function
+	mu: mean
+	Results:
+	v_est : array of estimated values at locations (xi,yi)
+	v_var : array of kriging variances at locations (xi,yi)
+	"""
+
+	n = x.shape[0]
+	if n==0:
+		d = 0;
+	else:
+		X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
+		d = squareform(pdist(X))
+	C = C0 - variogram(varioType, d, C0, L)
+	c = np.transpose(C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L))
+	l = solve(C, c)
+
+	v_est = np.dot(np.transpose(l), v - mu) + mu
+	v_var = C0 - np.diag(np.dot(np.transpose(l), c))
+
+	return v_est, v_var, l
+
+
+def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
+	"""
+	Simple kriging implementation
+	Arguments:
+	x, y, v: data points
+	xi, yi: the point where kriging interpolation is requested
+	covmodel: covariance model function
+	mu: mean
+	Results:
+	v_est : array of estimated values at locations (xi,yi)
+	v_var : array of kriging variances at locations (xi,yi)
+	"""
+
+	n = x.shape[0]
+	if n==0:
+		d = 0;
+	else:
+		X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
+		d = squareform(pdist(X))
+	C = C0 - variogram(varioType, d, C0, L);
+	c = C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L)
+	l = solve(C,c)
+
+	v_est = np.sum(l*(v - mu)) + mu
+	v_var = C0 - np.sum(l*c)
+
+	return v_est, v_var, l
+
 
 
 def variogram(model, h, sill, L):
@@ -49,6 +110,54 @@ np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0)
 	elif model == "spherical":
 		return sill * (3/2 * h_reduced - 0.5 * h_reduced**3) * (h < range) + sill * (h >= range)
 
+
+def genGaussianSim_2D_FFT(NX, NY, mean, var, varioType, range_x, range_y):
+
+	# Modified after Gregoire Mariethoz, 2010. Original code from Olaf Cirpka, 2003.
+	# Description:
+	# Generates one unconditional realization of a multiGaussian random function using FFT.
+	# Output arguments:
+	# grid: the grid containing the generated multiGaussian variable.
+	# Input arguments:
+	# x, y, z: the size of the simulation grid.
+	# mu: mean of the simulation.
+	# sigma2: variance of the simulation.
+	# varioType: covariance model. 'exponential'=exponential covariance. 'gaussian'=Gaussian covariance.
+	# lx, ly, lz: correlation lengths. The units are in number of grid nodes.
+
+	## Input arguments:
+	x = NX; y = NY; z = 1 # grid of size x*y*z
+	mu = mean; sigma2 = var**(1/2) # mean and variance of standard normal distribution
+	lx = range_x; ly = range_y; lz = 1 # correlation lengths
+
+	## Generate grid
+	zz,yy,xx = np.mgrid[0:z,0:y,0:x]
+	nx = xx.shape[2]; ny = xx.shape[1]; nz = xx.shape[0]
+
+	xc = (xx[0,0,-1]-xx[0,0,0])/2 # coordinates of the center of the grid
+	yc = (yy[0,-1,0]-yy[0,0,0])/2
+	zc = (zz[0,-1,0]-zz[0,0,0])/2
+
+	lx = lx/3; ly = ly/3; lz = lz/3
+	h = (((xx-xc)/lx)**2+((yy-yc)/ly)**2+((zz-zc)/lz)**2)**(1/2) # distance to the centre
+
+	if varioType == 'exponential' :
+		c = np.exp(-np.absolute(h))*sigma2 # exponential covariance
+	elif varioType == 'gaussian' :
+		c = np.exp(-h**2)*sigma2 # gaussian covariance
+
+	grid = np.fft.fftn(np.fft.fftshift(c))/(nx*ny*nz)
+	grid = np.absolute(grid); grid[0,0,0] = 0
+	ran = np.multiply(grid**(1/2),np.exp(1j*np.angle(np.fft.fftn(np.random.rand(nz,ny,nx)))))
+	#ran = grid**(1/2)*np.exp(1j*np.angle(np.fft.fftn(np.random.rand(nz,ny,nx))))
+	grid = np.real(np.fft.ifftn(ran*nx*ny*nz))
+
+	#gaussian = np.reshape(grid.squeeze(), (nx*ny,1))
+	gaussian = np.reshape(grid.squeeze(), (y, x))
+	np.mean(gaussian)
+	np.std(gaussian)
+
+	return gaussian
 
 
 def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
@@ -102,7 +211,7 @@ def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
 
 
 	# Define grid filled with values drawn from a uniform distribution between 1e-8 and 1 (excluded)
-	GRID_uni = np.random.uniform(1e-8, 1, (NY,NX))
+	GRID_uni = np.random.uniform(1e-8, 1, (NY, NX))
 
 	# Create grid to populate gradually with continuous gaussian values
 	GRID_gauss = np.zeros((NY,NX))
@@ -187,8 +296,9 @@ indices_yCoord_alreadyVisitedCells)
 				variogRange)
 
 			# Computation of the kriging weights lambdas	
-			lambdas = np.dot(inv(C), cov_vector)
-		#	print(lambdas)
+#			lambdas = np.dot(inv(C), cov_vector)
+			lambdas = lstsq(C, cov_vector)[0]
+#			print(lambdas)
 			
 			# Computation of the mean m of the cdf using the simple kriging mean
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
@@ -379,8 +489,9 @@ def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle
 				C0, variogRange_max, aniso_ratio, angle)
 
 			# Computation of the kriging weights lambdas	
-			lambdas = np.dot(inv(C), cov_vector)
-#			print(lambdas)
+#			lambdas = np.dot(inv(C), cov_vector)
+			lambdas = lstsq(C, cov_vector)[0]
+#			print(lambdas.shape)
 			
 			# Computation of the mean m of the cdf using the simple kriging mean
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
@@ -464,13 +575,22 @@ known facies proportions.
 	gaussianGrid_flattened_sorted = np.sort(np.reshape(gaussianGrid, -1))
 	threshold_S1 = gaussianGrid_flattened_sorted[nbElements4facies1] # threshold gaussian value between facies 1 and 2
 	threshold_S2 = gaussianGrid_flattened_sorted[nbElements4facies1And2] # threshold gaussian value between facies 2 and 3
+	thresholds = [threshold_S1, threshold_S2]
 
 	# Assign facies values according to derived thresholds
 	faciesGrid = np.ones((NY, NX))*2 # initialize facies grid with facies 2
 	faciesGrid[np.where(gaussianGrid <= threshold_S1)[0], np.where(gaussianGrid <= threshold_S1)[1]] = 1
 	faciesGrid[np.where(gaussianGrid > threshold_S2)[0], np.where(gaussianGrid > threshold_S2)[1]] = 3
 
-	return faciesGrid
+	# Compute proportion of each facies
+	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
+	prop_facies2 = faciesGrid.reshape(-1).tolist().count(2)/faciesGrid.size*100
+	prop_facies3 = faciesGrid.reshape(-1).tolist().count(3)/faciesGrid.size*100
+	print('Proportion of facies 1: %d%% ' % prop_facies1)
+	print('Proportion of facies 2: %d%% ' % prop_facies2)
+	print('Proportion of facies 3: %d%% ' % prop_facies3)
+
+	return faciesGrid, thresholds
 
 
 def discrete_imshow(faciesGrid):
@@ -550,7 +670,6 @@ line2 within the grid delimited by [xmin, xmax] and [ymin, ymax]
 	return x, y
 
 
-
 class randTruncLines():
 	"""
 	Class which attributes are the parameters defining 2 threshold lines.
@@ -618,7 +737,6 @@ class randTruncLines():
 		
 		self.angles = rotationAngles
 		self.dist2origin = distancesToOrigin
-
 
 
 def thresholdLineEq(r, teta, x):
@@ -812,4 +930,180 @@ def truncBiGaussian23facies(g1, g2, rule_type, thresholds):
 	return faciesGrid
 
 
+def truncGaussian2faciesUsingThresholds(gaussianGrid, thresholds):
+	"""
+	Truncates the continuous gaussian realization into 2 or 3 facies according to given thresholds.
+	Returns an array filled with values 1, 2 or 3 corresponding to either of the 3 facies 
+	
+	Parameters
+	----------
+	gaussianGrid : ndarray
+		numpy array filled with continuous gaussian values
 
+	thresholds : list of floats
+		
+
+	Returns
+	-------
+	ndarray
+		numpy array of same size as gaussianGrid
+	"""
+
+	# Assign facies values according to thresholds
+
+	faciesGrid = np.zeros((gaussianGrid.shape[0], gaussianGrid.shape[1]))
+
+	if len(thresholds) == 1:
+		faciesGrid[np.where(gaussianGrid <= thresholds[0])[0], np.where(gaussianGrid <= thresholds[0])[1]] = 1
+		faciesGrid[np.where(gaussianGrid > thresholds[0])[0], np.where(gaussianGrid > thresholds[0])[1]] = 3
+
+	# Compute proportion of each facies
+	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
+	prop_facies2 = faciesGrid.reshape(-1).tolist().count(2)/faciesGrid.size*100
+	prop_facies3 = faciesGrid.reshape(-1).tolist().count(3)/faciesGrid.size*100
+	print('Proportion of facies 1: %d%% ' % prop_facies1)
+	print('Proportion of facies 2: %d%% ' % prop_facies2)
+	print('Proportion of facies 3: %d%% ' % prop_facies3)
+
+	return faciesGrid, [prop_facies1, prop_facies2, prop_facies3] 
+
+
+def createSynFaciesObs(NX, NY, dx, dy, nbOfData):
+	"""
+	"""
+
+	x_min = 0  # min x coordinate of data
+	x_max = NX*dx # max x coordinate of data
+	y_min = 0 # min y coordinate of data
+	y_max = NY*dy # max y coordinate of data
+
+	x_data = np.random.uniform(x_min, x_max, nbOfData)
+	y_data = np.random.uniform(y_min, y_max, nbOfData)
+	
+	return x_data, y_data
+
+
+def assignDataToNearestCellCentroidCoordinates(xcoord_cellCentroids, ycoord_cellCentroids, dataset):
+	"""
+	"""
+
+	x_data = dataset[:, 0]
+	y_data = dataset[:, 1]
+	x_data2nearestCell = np.zeros(dataset.shape[0])	
+	y_data2nearestCell = np.zeros(dataset.shape[0])
+
+	i=0
+	for data in zip(x_data, y_data):
+		x_data2nearestCell[i] = xcoord_cellCentroids[np.abs(xcoord_cellCentroids - data[0]).argmin()]
+		y_data2nearestCell[i] = ycoord_cellCentroids[np.abs(ycoord_cellCentroids - data[1]).argmin()]
+		i=i+1
+
+	return x_data2nearestCell, y_data2nearestCell
+
+
+def convertFacies2IniPseudoData(faciesObs, thresholds):
+	"""
+	"""
+
+	pseudoData = np.zeros(faciesObs.shape[0]) # initialize pseudo gaussian data vector
+
+	if len(thresholds) == 1: # if two facies
+		pseudoData[np.where(faciesObs == np.min(faciesObs))[0]] = -5
+		pseudoData[np.where(faciesObs == np.max(faciesObs))[0]] = 5
+	elif len(thresholds) == 2: # if three facies
+		pseudoData[np.where(faciesObs == np.min(faciesObs))[0]] = -5
+		pseudoData[np.where((faciesObs > np.min(faciesObs)) & (faciesObs < np.max(faciesObs)))[0]] = 0
+		pseudoData[np.where(faciesObs == np.max(faciesObs))[0]] = 5
+	
+	return pseudoData
+
+
+def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
+	"""
+	"""
+
+	# Load facies observations
+	nbOfData = hardDataset.shape[0]
+	faciesObs = hardDataset[:, 2]
+	x_faciesObs = hardDataset[:, 0]
+	y_faciesObs = hardDataset[:, 1]
+
+	## Gibbs sampling 
+
+	# Step 1: Initialization of the procedure
+
+	pseudoData_ini = convertFacies2IniPseudoData(faciesObs, thresholds) # gaussian values
+	np.savetxt('pseudoData_ini.txt', pseudoData_ini)
+
+	# Step 2: Iterative procedure: Simple kriging is applied to the points in turn. For example, the value of the top point is kriged using the other three points as input data. Then, we move down to the second point and krige it using the initial values for the points below it and the new updated value for the top point. After completing the second point, we move down to the third one with is kriged using the updated values for the points above it and the old value for the point below it. When all the points have been updated by kriging, one iteration has been completed.
+
+	pseudoData_est_allIter = np.zeros((nbOfData, nbIter))
+	pseudoData_var_allIter = np.zeros((nbOfData, nbIter))
+	pseudoData_residual_allIter = np.zeros((nbOfData, nbIter))
+	pseudoData_allIter = np.zeros((nbOfData, nbIter+1))
+	pseudoData_allIter[:, 0] = pseudoData_ini
+
+	j=1 # initialize counter of iterations
+	while j <= nbIter:
+	#		print(j)
+		for i in np.arange(nbOfData):
+	#		print(i)
+			if i == 0:
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], 'spherical', 2, 0, 1)
+				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
+				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
+				
+			else:
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(np.concatenate((x_faciesObs[0:i], x_faciesObs[i+1:])), np.concatenate((y_faciesObs[0:i], y_faciesObs[i+1:])), np.concatenate((pseudoData_est_allIter[0:i, j-1], pseudoData_est_allIter[i+1:, j-1])), x_faciesObs[i], y_faciesObs[i], 'spherical', 2, 0, 1)	
+				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
+				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
+		
+			# Calculate the corresponding residual
+			R_i = np.random.normal(0, 1)
+
+	#		if pseudoData_ini[i] < thresholds[0]:
+			if pseudoData_allIter[i, j-1] < thresholds[0]:
+				while not (R_i <= -pseudoData_est_allIter[i, j-1]/pseudoData_var_allIter[i, j-1]**(1/2)):
+					R_i = np.random.normal(0, 1)
+			else:
+				while not (R_i > -pseudoData_est_allIter[i, j-1]/pseudoData_var_allIter[i, j-1]**(1/2)):
+					R_i = np.random.normal(0, 1)
+			pseudoData_residual_allIter[i, j-1] = R_i
+
+			pseudoData_allIter[i, j] = pseudoData_est_allIter[i, j-1] + pseudoData_var_allIter[i, j-1]**(1/2) * pseudoData_residual_allIter[i, j-1]
+
+	#	print(pseudoData_allIter[:, j-1])
+		j=j+1
+
+	pseudoData_final = pseudoData_allIter[:, it_st]
+	np.savetxt('pseudoData_iter' + str(it_st) + '.txt', pseudoData_final, fmt='%.2f')
+	#	print('\n')
+	#	print(pseudoData_est_allIter)
+	#	print('\n')
+	#	print(pseudoData_var_allIter)
+
+	fig, axarray = plt.subplots(5, 2, figsize=(9, 9))
+	k=0
+	for i in np.arange(5):
+		for j in np.arange(2):
+			axarray[i, j].scatter(np.arange(nbIter+1), pseudoData_allIter[k, :])
+			k=k+1
+
+	plt.show()
+
+	return pseudoData_final
+
+
+def findDataCellCoordinates(x_data, y_data, XX, YY):
+	"""
+	"""
+	
+	nbOfData = x_data.shape[0]
+	cellData_lin_index = np.zeros(nbOfData)
+	cellData_col_index = np.zeros(nbOfData)
+
+	for k in np.arange(nbOfData): # get cell coordinates of data
+		cellData_lin_index[k] = np.intersect1d(np.where(XX == x_data[k])[0], np.where(YY == y_data[k])[0])
+		cellData_col_index[k] = np.intersect1d(np.where(XX == x_data[k])[1], np.where(YY == y_data[k])[1])
+
+	return cellData_lin_index.astype(int), cellData_col_index.astype(int)
