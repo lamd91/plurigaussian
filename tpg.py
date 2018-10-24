@@ -15,16 +15,19 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 	"""
-	Simple kriging implementation
-	Arguments:
+	Simple kriging (multiple points)
+	
+	Parameters:
 	x, y, v: data points
-	xi, yi: the points where kriging interpolation is requested
-	covmodel: covariance model function
-	mu: mean
-	Results:
-	v_est : array of estimated values at locations (xi,yi)
-	v_var : array of kriging variances at locations (xi,yi)
-	"""
+	xi, yi: point where kriging interpolation is requested
+	varioType: variogram model ('exponential', 'gaussian', 'spherical')
+	mu: data mean
+	C0: data variance
+
+	Returns:
+	v_est : array of estimated values at locations (xi, yi)
+	v_var : array of kriging variances at locations (xi, yi)
+	""" 
 
 	n = x.shape[0]
 	if n==0:
@@ -44,16 +47,19 @@ def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 
 def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	"""
-	Simple kriging implementation
-	Arguments:
+	Simple kriging (single point)
+
+	Parameters:
 	x, y, v: data points
-	xi, yi: the point where kriging interpolation is requested
-	covmodel: covariance model function
-	mu: mean
-	Results:
-	v_est : array of estimated values at locations (xi,yi)
-	v_var : array of kriging variances at locations (xi,yi)
-	"""
+	xi, yi: point where kriging interpolation is requested
+	varioType: variogram model ('exponential', 'gaussian', 'spherical')
+	mu: data mean
+	C0: data variance
+
+	Returns:
+	v_est : array of estimated values at locations (xi, yi)
+	v_var : array of kriging variances at locations (xi, yi)
+	""" 
 
 	n = x.shape[0]
 	if n==0:
@@ -111,7 +117,7 @@ np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0)
 		return sill * (3/2 * h_reduced - 0.5 * h_reduced**3) * (h < range) + sill * (h >= range)
 
 
-def genGaussianSim_2D_FFT(NX, NY, mean, var, varioType, range_x, range_y):
+def genGaussian2DSim_FFT(NX, NY, mean, var, varioType, range_x, range_y):
 
 	# Modified after Gregoire Mariethoz, 2010. Original code from Olaf Cirpka, 2003.
 	# Description:
@@ -160,7 +166,7 @@ def genGaussianSim_2D_FFT(NX, NY, mean, var, varioType, range_x, range_y):
 	return gaussian
 
 
-def genGaussianSim_2D(NX, NY, dx, dy, varioType, L):
+def genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, varioType, L):
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
@@ -341,7 +347,7 @@ indices_yCoord_alreadyVisitedCells)
 	return GRID_gauss
 
 
-def genGaussianSim_2D_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle_degrees):
+def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle_degrees):
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
