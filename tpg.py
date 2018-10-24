@@ -1051,9 +1051,7 @@ def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
 
 	j=1 # initialize counter of iterations
 	while j <= nbIter:
-	#		print(j)
 		for i in np.arange(nbOfData):
-	#		print(i)
 			if i == 0:
 				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], 'spherical', 2, 0, 1)
 				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
@@ -1078,15 +1076,10 @@ def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
 
 			pseudoData_allIter[i, j] = pseudoData_est_allIter[i, j-1] + pseudoData_var_allIter[i, j-1]**(1/2) * pseudoData_residual_allIter[i, j-1]
 
-	#	print(pseudoData_allIter[:, j-1])
 		j=j+1
 
 	pseudoData_final = pseudoData_allIter[:, it_st]
 	np.savetxt('pseudoData_iter' + str(it_st) + '.txt', pseudoData_final, fmt='%.2f')
-	#	print('\n')
-	#	print(pseudoData_est_allIter)
-	#	print('\n')
-	#	print(pseudoData_var_allIter)
 
 	fig, axarray = plt.subplots(5, 2, figsize=(9, 9))
 	k=0
