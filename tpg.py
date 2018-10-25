@@ -15,7 +15,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 	"""
-	Simple kriging (multiple points)
+	Simple kriging (for more than one point)
 	
 	Parameters:
 	x, y, v: data points
@@ -47,7 +47,7 @@ def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 
 def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	"""
-	Simple kriging (single point)
+	Simple kriging (for one point only)
 
 	Parameters:
 	x, y, v: data points
@@ -957,11 +957,14 @@ def truncGaussian2faciesUsingThresholds(gaussianGrid, thresholds):
 
 	# Assign facies values according to thresholds
 
-	faciesGrid = np.zeros((gaussianGrid.shape[0], gaussianGrid.shape[1]))
+	faciesGrid = np.ones((gaussianGrid.shape[0], gaussianGrid.shape[1]))*2
 
 	if len(thresholds) == 1:
 		faciesGrid[np.where(gaussianGrid <= thresholds[0])[0], np.where(gaussianGrid <= thresholds[0])[1]] = 1
 		faciesGrid[np.where(gaussianGrid > thresholds[0])[0], np.where(gaussianGrid > thresholds[0])[1]] = 3
+	elif len(thresholds) == 2:
+		faciesGrid[np.where(gaussianGrid <= thresholds[0])[0], np.where(gaussianGrid <= thresholds[0])[1]] = 1
+		faciesGrid[np.where(gaussianGrid > thresholds[1])[0], np.where(gaussianGrid > thresholds[1])[1]] = 3
 
 	# Compute proportion of each facies
 	prop_facies1 = faciesGrid.reshape(-1).tolist().count(1)/faciesGrid.size*100
@@ -1018,7 +1021,8 @@ def convertFacies2IniPseudoData(faciesObs, thresholds):
 		pseudoData[np.where(faciesObs == np.max(faciesObs))[0]] = 5
 	elif len(thresholds) == 2: # if three facies
 		pseudoData[np.where(faciesObs == np.min(faciesObs))[0]] = -5
-		pseudoData[np.where((faciesObs > np.min(faciesObs)) & (faciesObs < np.max(faciesObs)))[0]] = 0
+#		pseudoData[np.where((faciesObs > np.min(faciesObs)) & (faciesObs < np.max(faciesObs)))[0]] = thresholds[1]
+		pseudoData[np.where((faciesObs > np.min(faciesObs)) & (faciesObs < np.max(faciesObs)))[0]] = np.mean(thresholds)
 		pseudoData[np.where(faciesObs == np.max(faciesObs))[0]] = 5
 	
 	return pseudoData
@@ -1065,13 +1069,24 @@ def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
 			# Calculate the corresponding residual
 			R_i = np.random.normal(0, 1)
 
-	#		if pseudoData_ini[i] < thresholds[0]:
-			if pseudoData_allIter[i, j-1] < thresholds[0]:
-				while not (R_i <= -pseudoData_est_allIter[i, j-1]/pseudoData_var_allIter[i, j-1]**(1/2)):
-					R_i = np.random.normal(0, 1)
-			else:
-				while not (R_i > -pseudoData_est_allIter[i, j-1]/pseudoData_var_allIter[i, j-1]**(1/2)):
-					R_i = np.random.normal(0, 1)
+			if len(thresholds) == 1:
+				if pseudoData_allIter[i, j-1] <= thresholds[0]:
+					while not (R_i <= (thresholds[0]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2)):
+						R_i = np.random.normal(0, 1)
+				else:
+					while not (R_i > (thresholds[0]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2)):
+						R_i = np.random.normal(0, 1)
+			elif len(thresholds) == 2:
+				if pseudoData_allIter[i, j-1] <= thresholds[0]:
+					while not (R_i <= (thresholds[0]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2)):
+						R_i = np.random.normal(0, 1)
+				elif pseudoData_allIter[i, j-1] > thresholds[1]:
+					while not (R_i > (thresholds[1]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2)):
+						R_i = np.random.normal(0, 1)
+				elif pseudoData_allIter[i, j-1] > thresholds[0] and pseudoData_allIter[i, j-1] <= thresholds[1]:
+					while not (R_i > (thresholds[0]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2) and R_i <= (thresholds[1]-pseudoData_est_allIter[i, j-1])/pseudoData_var_allIter[i, j-1]**(1/2)):
+                                                R_i = np.random.normal(0, 1)
+			
 			pseudoData_residual_allIter[i, j-1] = R_i
 
 			pseudoData_allIter[i, j] = pseudoData_est_allIter[i, j-1] + pseudoData_var_allIter[i, j-1]**(1/2) * pseudoData_residual_allIter[i, j-1]

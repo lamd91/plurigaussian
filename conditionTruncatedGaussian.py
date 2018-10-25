@@ -39,15 +39,15 @@ lineIndices_data, colIndices_data = tpg.findDataCellCoordinates(x_data, y_data, 
 # The 3rd column of synFaciesData (synFaciesData[:, 2]) correspond to faciesMap_ref[ineIndices_data, colIndices_data]
 
 # Convert facies observation to gaussian pseudo data (Gibbs sampling)
-it_max = 100 # total number of iterations
-it_st = 50 # iteration at which the distribution is sampled from (should be after the burn-in period; check convergence)
-thresholds = [0] # use the same thresholds as the ones used to obtain the reference
+it_max = 200 # total number of iterations
+it_st = 100 # iteration at which the distribution is sampled from (should be after the burn-in period; check convergence)
+thresholds = [-0.78, -0.16] # use the same thresholds as the ones used to obtain the reference
 #print(pseudoData_ini)
 pseudoData = tpg.gibbsSampling(synFaciesData, thresholds, it_max, it_st)
 
 # Generate/Load existing unconditional gaussian simulation
-#gaussian_uc = tpg.genGaussianSim_2D(NX, NY, dx, dy, 'spherical', 10) 
-#gaussian_uc = tpg.genGaussianSim_2D_FFT(NX, NY, dx, dy, 'exponential', 20, 20) 
+#gaussian_uc = tpg.genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, 'spherical', 10) 
+#gaussian_uc = tpg.genGaussian2DSim_FFT(NX, NY, dx, dy, 'exponential', 20, 20) 
 #np.savetxt('gaussian_uc.txt', gaussian_uc)
 gaussian_uc = np.loadtxt('gaussian_uc.txt')
 
