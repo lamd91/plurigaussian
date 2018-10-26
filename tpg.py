@@ -37,7 +37,8 @@ def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 		d = squareform(pdist(X))
 	C = C0 - variogram(varioType, d, C0, L)
 	c = np.transpose(C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L))
-	l = solve(C, c)
+#	l = solve(C, c)
+	l = lstsq(C, c)[0]
 
 	v_est = np.dot(np.transpose(l), v - mu) + mu
 	v_var = C0 - np.diag(np.dot(np.transpose(l), c))
@@ -67,7 +68,7 @@ def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	else:
 		X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
 		d = squareform(pdist(X))
-	C = C0 - variogram(varioType, d, C0, L);
+	C = C0 - variogram(varioType, d, C0, L)
 	c = C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L)
 	l = solve(C,c)
 
@@ -1010,7 +1011,7 @@ def assignDataToNearestCellCentroidCoordinates(xcoord_cellCentroids, ycoord_cell
 	return x_data2nearestCell, y_data2nearestCell
 
 
-def convertFacies2IniPseudoData(faciesObs, thresholds):
+def convertFacies2IniPseudoData_tg(faciesObs, thresholds):
 	"""
 	"""
 
@@ -1028,22 +1029,67 @@ def convertFacies2IniPseudoData(faciesObs, thresholds):
 	return pseudoData
 
 
-def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
+def convertFacies2IniPseudoData_tpg_g1(faciesObs, rule_type):
+	"""
+	"""
+
+	pseudoData = np.zeros(faciesObs.shape[0]) # initialize pseudo gaussian data vector
+
+	# Assuming 3 facies
+	if rule_type == 1:
+		pseudoData[np.where(faciesObs == 1)[0]] = -5
+		pseudoData[np.where(faciesObs == 2)[0]] = 5
+		pseudoData[np.where(faciesObs == 3)[0]] = 5
+
+	elif rule_type == 2:
+		pseudoData[np.where(faciesObs == 1)[0]] = 0
+		pseudoData[np.where(faciesObs == 2)[0]] = -5
+		pseudoData[np.where(faciesObs == 3)[0]] = 5
+
+	elif rule_type == 3:				
+		pseudoData[np.where(faciesObs == 1)[0]] = 5
+		pseudoData[np.where(faciesObs == 2)[0]] = -5
+		pseudoData[np.where(faciesObs == 3)[0]] = -5
+
+	return pseudoData
+
+
+def convertFacies2IniPseudoData_tpg_g2(faciesObs, rule_type):
+	"""
+	"""
+
+	pseudoData = np.zeros(faciesObs.shape[0]) # initialize pseudo gaussian data vector
+
+	# Assuming 3 facies
+	if rule_type == 1:
+		pseudoData[np.where(faciesObs == 1)[0]] = 0
+		pseudoData[np.where(faciesObs == 2)[0]] = 5
+		pseudoData[np.where(faciesObs == 3)[0]] = -5
+
+	elif rule_type == 2:
+		pseudoData[np.where(faciesObs == 1)[0]] = 5
+		pseudoData[np.where(faciesObs == 2)[0]] = -5
+		pseudoData[np.where(faciesObs == 3)[0]] = -5
+
+	elif rule_type == 3:				
+		pseudoData[np.where(faciesObs == 1)[0]] = 0
+		pseudoData[np.where(faciesObs == 2)[0]] = 5
+		pseudoData[np.where(faciesObs == 3)[0]] = -5
+
+	return pseudoData
+
+
+def gibbsSampling(pseudoData_ini, x_faciesObs, y_faciesObs, thresholds, nbIter, it_st):
 	"""
 	"""
 
 	# Load facies observations
-	nbOfData = hardDataset.shape[0]
-	faciesObs = hardDataset[:, 2]
-	x_faciesObs = hardDataset[:, 0]
-	y_faciesObs = hardDataset[:, 1]
+	nbOfData = x_faciesObs.shape[0]
+#	faciesObs = hardDataset[:, 2]
+#	x_faciesObs = hardDataset[:, 0]
+#	y_faciesObs = hardDataset[:, 1]
 
 	## Gibbs sampling 
-
-	# Step 1: Initialization of the procedure
-
-	pseudoData_ini = convertFacies2IniPseudoData(faciesObs, thresholds) # gaussian values
-	np.savetxt('pseudoData_ini.txt', pseudoData_ini)
 
 	# Step 2: Iterative procedure: Simple kriging is applied to the points in turn. For example, the value of the top point is kriged using the other three points as input data. Then, we move down to the second point and krige it using the initial values for the points below it and the new updated value for the top point. After completing the second point, we move down to the third one with is kriged using the updated values for the points above it and the old value for the point below it. When all the points have been updated by kriging, one iteration has been completed.
 
@@ -1057,12 +1103,12 @@ def gibbsSampling(hardDataset, thresholds, nbIter, it_st):
 	while j <= nbIter:
 		for i in np.arange(nbOfData):
 			if i == 0:
-				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], 'spherical', 2, 0, 1)
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], 'exponential', 15, 0, 1)
 				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
 				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
 				
 			else:
-				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(np.concatenate((x_faciesObs[0:i], x_faciesObs[i+1:])), np.concatenate((y_faciesObs[0:i], y_faciesObs[i+1:])), np.concatenate((pseudoData_est_allIter[0:i, j-1], pseudoData_est_allIter[i+1:, j-1])), x_faciesObs[i], y_faciesObs[i], 'spherical', 2, 0, 1)	
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(np.concatenate((x_faciesObs[0:i], x_faciesObs[i+1:])), np.concatenate((y_faciesObs[0:i], y_faciesObs[i+1:])), np.concatenate((pseudoData_est_allIter[0:i, j-1], pseudoData_est_allIter[i+1:, j-1])), x_faciesObs[i], y_faciesObs[i], 'spherical', 10, 0, 1)	
 				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
 				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
 		

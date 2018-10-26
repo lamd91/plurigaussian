@@ -22,7 +22,7 @@ y = np.arange(y_min, y_max+dy, dy) # vector of all y coordinates
 XX, YY = np.meshgrid(x, y) # store x coordinates in array of shape of the grid
 
 # Load local synthetic facies observations (taken from the reference facies map "faciesMap_ref4HardDataCond.txt") for conditioning
-synFaciesData = np.loadtxt('synFaciesData_fromREF.txt') # the first and second columns correspond to the x and y coordinates of the data
+synFaciesData = np.loadtxt('synFaciesData_from_tg_REF.txt') # the first and second columns correspond to the x and y coordinates of the data
 #nbOfData = synFaciesData.shape[0]
 
 # Assign data to center of nearest gridblock
@@ -41,8 +41,8 @@ lineIndices_data, colIndices_data = tpg.findDataCellCoordinates(x_data, y_data, 
 it_max = 200 # total number of iterations
 it_st = 100 # iteration at which the distribution is sampled from (should be after the burn-in period; check convergence)
 thresholds = [-0.78, -0.16] # use the same thresholds as the ones used to obtain the reference
-#print(pseudoData_ini)
-pseudoData = tpg.gibbsSampling(synFaciesData, thresholds, it_max, it_st)
+pseudoData_ini = tpg.convertFacies2IniPseudoData_tg(synFaciesData[:, 2], thresholds)
+pseudoData = tpg.gibbsSampling(pseudoData_ini, synFaciesData[:, 0], synFaciesData[:, 1], thresholds, it_max, it_st)
 
 # Generate/Load existing unconditional gaussian simulation
 #gaussian_uc = tpg.genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, 'spherical', 10) 
