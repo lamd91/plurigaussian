@@ -120,7 +120,7 @@ cax2 = divider2.append_axes("right", size="3%", pad=0.2)
 cbar1 = plt.colorbar(im1, cax=cax1)
 cbar2 = plt.colorbar(im2, cax=cax2)
 
-plt.savefig('conditioningTG.png', dpi=300)
+plt.savefig('conditioningTPG.png', dpi=300)
 
 plt.show()
 
