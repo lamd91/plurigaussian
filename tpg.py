@@ -128,30 +128,6 @@ class model_anisotropic():
 		return self.sill - self.variogram()
 
 
-def variogram_aniso(model, h_x, h_y, sill, range_max, aniso_ratio, angle):
-	"""
-	Provides anisotropic variogram models given type of model, vector of horizontal component of distances, 
-vector of vertical component of distances,  sill, maximum range, anisotropy ratio, counterclockwise rotation angle.
-	"""
-
-	R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])	# rotation matrix (angles are measured counterclockwise from east)
-	T = np.diag(np.array([1/range_max, 1/(range_max*aniso_ratio)])) # reduced distance scaling matrix
-
-	h = norm(np.transpose(np.hstack((h_x, h_y))), axis=0)
-	h_reduced = norm(np.dot(T, np.dot(R, np.transpose(np.hstack((h_x, h_y))))), 2, axis=0) # equal to ratio h/range
-	range = h*range_max*range_max*aniso_ratio/norm(np.dot(np.diag(np.array([range_max*aniso_ratio, range_max])), 
-np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0) 
-
-	if model == "gaussian":
-		return sill * (1 - np.exp(-(3**(1/2) * h_reduced)**2))
-
-	elif model == "exponential":
-		return sill * (1 - np.exp(-3 * h_reduced))
-
-	elif model == "spherical":
-		return sill * (3/2 * h_reduced - 0.5 * h_reduced**3) * (h < range) + sill * (h >= range)
-
-
 def genGaussian2DSim_FFT(NX, NY, mean, var, varioType, range_x, range_y):
 
 	# Modified after Gregoire Mariethoz, 2010. Original code from Olaf Cirpka, 2003.
