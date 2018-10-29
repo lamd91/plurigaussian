@@ -8,7 +8,9 @@ import tpg
 
 
 # Simulate one continuous gaussian realization
-gaussian = tpg.genGaussian2DSim_SGSim_iso(30, 30, 1, 1, 'exponential', 10)
+#model = tpg.model(10, 'exponential')
+model = tpg.model(10, 'spherical')
+gaussian = tpg.genGaussian2DSim_SGSim(30, 30, 1, 1, model)
 #gaussian = tpg.genGaussian2DSim_SGSim_aniso(120, 120, 0.5, 0.5, 'exponential', 10, 0.5, 45)
 
 # Display generated gaussian realization

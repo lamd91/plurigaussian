@@ -78,21 +78,24 @@ def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	return v_est, v_var, l
 
 
+class model():
+		
+	def __init__(self, L, modelType):
+		self.range = L
+		self.type = modelType
 
-def variogram(model, h, sill, L):
-	"""
-	Provides isotropic variogram models given type of model, vector of distances, sill and range.
-	"""
+	def variogram(self, h, sill, L):
+		
+		if self.type == 'exponential':
+			return sill * (1 - np.exp(-3 * np.absolute(h) / self.range))
+		elif self.type == 'spherical':
+			return sill * (3 * h / (2 * L) - 0.5 * (h / L)**3) * (h < L) + sill * (h >= L) 
+		elif self.type == 'gaussian':
+			return sill * (1 - np.exp(-(3**(1/2) * h/L)**2))
 
-	if model == "gaussian":
-		return sill*(1-np.exp(-(3**(1/2)*h/L)**2))
-
-	elif model == "exponential":
-		return sill * (1 - np.exp(-3 * np.absolute(h) / L))
-
-	elif model == "spherical":
-		return sill * (3 * h / (2 * L) - 0.5 * (h / L)**3) * (h < L) + sill * (h >= L)
-
+	def covariance(self, sill):
+		return sill - self.variogram()
+	
 
 def variogram_aniso(model, h_x, h_y, sill, range_max, aniso_ratio, angle):
 	"""
@@ -167,7 +170,7 @@ def genGaussian2DSim_FFT(NX, NY, mean, var, varioType, range_x, range_y):
 	return gaussian
 
 
-def genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, varioType, L):
+def genGaussian2DSim_SGSim(NX, NY, dx, dy, model):
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
@@ -186,11 +189,8 @@ def genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, varioType, L):
 	dy : float
 		resolution of gridblock along y axis in meters
 	
-	varioType : string
-		name of the variogram model: "gaussian", "exponential" or "spherical"
+	model : object
 
-	L : float
-		range in meters of variogram model
 	
 	Returns
 	-------
@@ -232,7 +232,7 @@ def genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, varioType, L):
 
 
 	# Variogram parameters
-	variogRange = L # range of variogram in meters
+	variogRange = model.range # range of variogram in meters
 	C0 = 1 # data variance set equal to the imposed value 
 	mean = 0
 	var = 1
@@ -296,11 +296,10 @@ indices_yCoord_alreadyVisitedCells)
 					np.repeat(xCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2 + 
 					(yCoord_alreadyVisitedCells_withinNeighborhood - 
 					np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2)**(1/2)
-				C[i, :] = C0 - variogram(varioType, distBetweenPairsOfSimulatedPoints, C0, variogRange)
+				C[i, :] = C0 - model.variogram(distBetweenPairsOfSimulatedPoints, C0, variogRange)
 
 			# Define the vector of spatial correlations between the simulation cell and the already simulated points within the neighborhood
-			cov_vector = C0 - variogram(varioType, np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, 
-				variogRange)
+			cov_vector = C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)
 
 			# Computation of the kriging weights lambdas	
 #			lambdas = np.dot(inv(C), cov_vector)
@@ -311,8 +310,9 @@ indices_yCoord_alreadyVisitedCells)
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
 		
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
-			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, 
-				np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
+#			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, 
+#				np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
+			var = C0 - np.sum(lambdas*(C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
 			sig = var**(1/2)	
 
 
