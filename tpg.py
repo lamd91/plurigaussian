@@ -78,24 +78,55 @@ def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	return v_est, v_var, l
 
 
-class model():
+class model_isotropic():
 		
-	def __init__(self, L, modelType):
-		self.range = L
+	def __init__(self, modelType, sill, L):
 		self.type = modelType
+		self.sill = sill 
+		self.range = L
 
-	def variogram(self, h, sill, L):
+	def variogram(self, h):
 		
 		if self.type == 'exponential':
-			return sill * (1 - np.exp(-3 * np.absolute(h) / self.range))
+			return self.sill * (1 - np.exp(-3 * np.absolute(h) / self.range))
 		elif self.type == 'spherical':
-			return sill * (3 * h / (2 * L) - 0.5 * (h / L)**3) * (h < L) + sill * (h >= L) 
+			return self.sill * (3 * h / (2 * self.range) - 0.5 * (h / self.range)**3) * (h < self.range) + self.sill * (h >= self.range) 
 		elif self.type == 'gaussian':
-			return sill * (1 - np.exp(-(3**(1/2) * h/L)**2))
+			return self.sill * (1 - np.exp(-(3**(1/2) * h / self.range)**2))
 
-	def covariance(self, sill):
-		return sill - self.variogram()
+	def covariance(self):
+		return self.sill - self.variogram()
 	
+
+class model_anisotropic():
+		
+	def __init__(self, modelType, sill, L_max, aniso_ratio, angle):
+		self.type = modelType
+		self.sill = sill 
+		self.maxRange = L_max
+		self.anisoRatio = aniso_ratio
+		self.rotAngle = angle
+
+	def variogram(self, h_x, h_y):
+
+		R = np.array([[np.cos(self.rotAngle), np.sin(self.rotAngle)], [-np.sin(self.rotAngle), np.cos(self.rotAngle)]])	# rotation matrix (angles are measured counterclockwise from east)
+		T = np.diag(np.array([1/self.maxRange, 1/(self.maxRange*self.anisoRatio)])) # reduced distance scaling matrix
+
+		h = norm(np.transpose(np.hstack((h_x, h_y))), axis=0)
+		h_reduced = norm(np.dot(T, np.dot(R, np.transpose(np.hstack((h_x, h_y))))), 2, axis=0) # equal to ratio h/range
+		range = h*self.maxRange*self.maxRange*self.anisoRatio/norm(np.dot(np.diag(np.array([self.maxRange*self.anisoRatio, self.maxRange])), 
+	np.dot(R, np.transpose(np.hstack((h_x, h_y))))), axis=0) 
+		
+		if self.type == 'exponential':
+			return self.sill * (1 - np.exp(-3 * h_reduced))
+		elif self.type == 'spherical':
+			return self.sill * (3/2 * h_reduced - 0.5 * h_reduced**3) * (h < range) + self.sill * (h >= range)
+		elif self.type == 'gaussian':
+			return self.sill * (1 - np.exp(-(3**(1/2) * h_reduced)**2))
+
+	def covariance(self):
+		return self.sill - self.variogram()
+
 
 def variogram_aniso(model, h_x, h_y, sill, range_max, aniso_ratio, angle):
 	"""
@@ -170,7 +201,7 @@ def genGaussian2DSim_FFT(NX, NY, mean, var, varioType, range_x, range_y):
 	return gaussian
 
 
-def genGaussian2DSim_SGSim(NX, NY, dx, dy, model):
+def genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, model):
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
@@ -233,9 +264,9 @@ def genGaussian2DSim_SGSim(NX, NY, dx, dy, model):
 
 	# Variogram parameters
 	variogRange = model.range # range of variogram in meters
-	C0 = 1 # data variance set equal to the imposed value 
+	C0 = model.sill # data variance set equal to the imposed value 
 	mean = 0
-	var = 1
+	var = C0
 	std = var**(1/2)
 
 	# Cell by cell simulation loop 
@@ -296,10 +327,10 @@ indices_yCoord_alreadyVisitedCells)
 					np.repeat(xCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2 + 
 					(yCoord_alreadyVisitedCells_withinNeighborhood - 
 					np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd))**2)**(1/2)
-				C[i, :] = C0 - model.variogram(distBetweenPairsOfSimulatedPoints, C0, variogRange)
+				C[i, :] = C0 - model.variogram(distBetweenPairsOfSimulatedPoints)
 
 			# Define the vector of spatial correlations between the simulation cell and the already simulated points within the neighborhood
-			cov_vector = C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)
+			cov_vector = C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood))
 
 			# Computation of the kriging weights lambdas	
 #			lambdas = np.dot(inv(C), cov_vector)
@@ -312,7 +343,7 @@ indices_yCoord_alreadyVisitedCells)
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
 #			var = C0 - np.sum(lambdas*(C0 - variogram(varioType, 
 #				np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
-			var = C0 - np.sum(lambdas*(C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood), C0, variogRange)))
+			var = C0 - np.sum(lambdas*(C0 - model.variogram(np.asarray(distancesToAlreadyVisitedCells_withinNeighborhood))))
 			sig = var**(1/2)	
 
 
@@ -348,7 +379,7 @@ indices_yCoord_alreadyVisitedCells)
 	return GRID_gauss
 
 
-def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, angle_degrees):
+def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, model):
 	"""
 	Simulates a continuous gaussian realization N(0,1) using the Sequential Gaussian Simulation (SGSim) method.
 	Returns an array of gaussian values.
@@ -361,7 +392,7 @@ def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, 
 	NY : integer
 		number of gridblocks along y axis
 
-	dx : float
+	r float
 		resolution of gridblock along x axis in meters
 
 	dy : float
@@ -420,12 +451,12 @@ def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, 
 
 
 	# Variogram parameters
-	variogRange_max = L_max # range of variogram in meters
-	variogRange_min = L_max*aniso_ratio
-	angle = radians(angle_degrees)
-	C0 = 1 # data variance set equal to the imposed value 
+	variogRange_max = model.maxRange # range of variogram in meters
+	variogRange_min = variogRange_max * model.anisoRatio # anisotropy factor
+	angle = radians(model.rotAngle) # rotation angle
+	C0 = model.sill # data variance set equal to the imposed value 
 	mean = 0
-	var = 1
+	var = C0
 	std = var**(1/2)
 
 	# Cell by cell simulation loop 
@@ -485,15 +516,13 @@ def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, 
 			for i in np.arange(nbOfSimulatedCellsWithinNeighbd): # fill covariance matrix line by line
 				distBetweenPairsOfSimulatedPoints_x = xCoord_alreadyVisitedCells_withinNeighborhood - np.repeat(xCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd)
 				distBetweenPairsOfSimulatedPoints_y = yCoord_alreadyVisitedCells_withinNeighborhood - np.repeat(yCoord_alreadyVisitedCells_withinNeighborhood[i], nbOfSimulatedCellsWithinNeighbd)
-				C[i, :] = C0 - variogram_aniso(varioType, distBetweenPairsOfSimulatedPoints_x.reshape(-1,1), distBetweenPairsOfSimulatedPoints_y.reshape(-1,1), C0, variogRange_max, aniso_ratio, angle)
+				C[i, :] = C0 - model.variogram(distBetweenPairsOfSimulatedPoints_x.reshape(-1,1), distBetweenPairsOfSimulatedPoints_y.reshape(-1,1))
 
 	
 			# Define the vector of spatial correlations between the simulation cell and the already simulated points within the neighborhood			
 
-			cov_vector = C0 - variogram_aniso(varioType, 
-				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), 
-				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), 
-				C0, variogRange_max, aniso_ratio, angle)
+			cov_vector = C0 - model.variogram(np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), 
+				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1))
 
 			# Computation of the kriging weights lambdas	
 #			lambdas = np.dot(inv(C), cov_vector)
@@ -504,10 +533,7 @@ def genGaussian2DSim_SGSim_aniso(NX, NY, dx, dy, varioType, L_max, aniso_ratio, 
 			m = mean + np.sum(lambdas*(np.asarray(simValues_alreadyVisitedCells_withinNeighborhood) - mean))
 		
 			# Computation of the standard deviation sig of the cdf using the simple kriging variance
-			var = C0 - np.sum(lambdas*(C0 - variogram_aniso(varioType, 
-				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), 
-				np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1), C0, variogRange_max, 
-				aniso_ratio, angle)))
+			var = C0 - np.sum(lambdas*(C0 - model.variogram(np.asarray(distToAlreadyVisitedCells_withinNeighborhood_x).reshape(-1,1), np.asarray(distToAlreadyVisitedCells_withinNeighborhood_y).reshape(-1,1))))
 			sig = var**(1/2)	
 
 
