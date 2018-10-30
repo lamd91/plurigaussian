@@ -41,8 +41,9 @@ lineIndices_data, colIndices_data = tpg.findDataCellCoordinates(x_data, y_data, 
 it_max = 200 # total number of iterations
 it_st = 100 # iteration at which the distribution is sampled from (should be after the burn-in period; check convergence)
 thresholds = [-0.78, -0.16] # use the same thresholds as the ones used to obtain the reference
+model = tpg.model_isotropic('spherical', 1, 10) # model to represent spatial variability of data
 pseudoData_ini = tpg.convertFacies2IniPseudoData_tg(synFaciesData[:, 2], thresholds)
-pseudoData = tpg.gibbsSampling(pseudoData_ini, synFaciesData[:, 0], synFaciesData[:, 1], thresholds, it_max, it_st)
+pseudoData = tpg.gibbsSampling(pseudoData_ini, model, synFaciesData[:, 0], synFaciesData[:, 1], thresholds, it_max, it_st)
 
 # Generate/Load existing unconditional gaussian simulation
 #gaussian_uc = tpg.genGaussian2DSim_SGSim_iso(NX, NY, dx, dy, 'spherical', 10) 
@@ -52,69 +53,73 @@ gaussian_uc = np.loadtxt('gaussian_uc.txt')
 
 # Truncate unconditional gaussian realization to facies
 facies_uc, props_uc = tpg.truncGaussian2faciesUsingThresholds(gaussian_uc, thresholds)
+print('Observed/Simulated facies at data locations before hard conditioning')
 print(synFaciesData[:, 2])
 print(facies_uc[lineIndices_data, colIndices_data])
 print(props_uc)
  
-# Compute kriging estimate of data
-sk_est_data, sk_var_data, sk_weights_data = tpg.simpleKrig_vector(x_data, y_data, pseudoData, XX.reshape(-1, 1), YY.reshape(-1, 1), 'spherical', 10, 0, 1)
-sk_data_grid = sk_est_data.reshape(NY, NX)
-#print(pseudoData)
-#print(sk_data_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
-
-# Compute kriging estimate of values simulated at data location
+## Compute kriging estimate of the residuals
 simData_dataLoc = gaussian_uc[lineIndices_data, colIndices_data]
-sk_est_simData, sk_var_simData, sk_weights_simData = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc, XX.reshape(-1, 1), YY.reshape(-1, 1), 'spherical', 10, 0, 1)
-sk_simData_grid = sk_est_simData.reshape(NY, NX)
-#print(simData_dataLoc)
-#print(sk_simData_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
+dataResiduals = pseudoData - simData_dataLoc
+sk_est_dataResiduals, sk_var_dataResiduals, sk_weights_dataResiduals = tpg.simpleKrig_vector(x_data, y_data, dataResiduals, XX.reshape(-1, 1), YY.reshape(-1, 1), model, 0, 1)
+sk_dataResiduals_grid = sk_est_dataResiduals.reshape(NY, NX)
+
+## Compute kriging estimate of data
+#sk_est_data, sk_var_data, sk_weights_data = tpg.simpleKrig_vector(x_data, y_data, pseudoData, XX.reshape(-1, 1), YY.reshape(-1, 1), model, 0, 1)
+#sk_data_grid = sk_est_data.reshape(NY, NX)
+##print(pseudoData)
+##print(sk_data_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
+#
+## Compute kriging estimate of values simulated at data location
+#simData_dataLoc = gaussian_uc[lineIndices_data, colIndices_data]
+#sk_est_simData, sk_var_simData, sk_weights_simData = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc, XX.reshape(-1, 1), YY.reshape(-1, 1), model, 0, 1)
+#sk_simData_grid = sk_est_simData.reshape(NY, NX)
+##print(simData_dataLoc)
+##print(sk_simData_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
 
 # Condition unconditional gaussian simulation with gaussian pseudo data
-gaussian_c = sk_data_grid + (gaussian_uc - sk_simData_grid)
+gaussian_c = gaussian_uc + sk_dataResiduals_grid
+#gaussian_c = sk_data_grid + (gaussian_uc - sk_simData_grid) # equivalent to previous line
 np.savetxt('gaussian_c.txt', gaussian_c)
 
 # Truncate conditional gaussian realization to facies
 facies_c, props_c = tpg.truncGaussian2faciesUsingThresholds(gaussian_c, thresholds)
+print('Observed/Simulated facies at data locations after hard conditioning')
 print(synFaciesData[:, 2])
 print(facies_c[lineIndices_data, colIndices_data])
 print(props_c)
 
 # Display unconditional realization/kriging estimate of data/kriging estimate of values simulated at data locations/conditional simulation/conditional facies realization
 plt.close()
-fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(1, 6, figsize=(20,8))
+fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20,8))
 fig.subplots_adjust(wspace=0.4)
 minVal = -3.5
 maxVal = 3.5
 im1 = ax1.imshow(gaussian_uc, vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
 im2 = ax2.imshow(facies_uc, cmap='rainbow', vmin = np.min(facies_uc)-.5, vmax = np.max(facies_uc)+.5, alpha=0.5, origin='lower')
-im3 = ax3.imshow(sk_est_data.reshape(NY, NX), vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
-im4 = ax4.imshow(sk_est_simData.reshape(NY, NX), vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
-im5 = ax5.imshow(gaussian_c, vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
-im6 = ax6.imshow(facies_c, cmap='rainbow', vmin = np.min(facies_c)-.5, vmax = np.max(facies_c)+.5, alpha=0.5, origin='lower')
+im3 = ax3.imshow(sk_est_dataResiduals.reshape(NY, NX), vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
+im4 = ax4.imshow(gaussian_c, vmin=minVal, vmax=maxVal, cmap='rainbow', origin='lower')
+im5 = ax5.imshow(facies_c, cmap='rainbow', vmin = np.min(facies_c)-.5, vmax = np.max(facies_c)+.5, alpha=0.5, origin='lower')
 ax1.set_title('Unconditional realization', fontsize=10)
 ax2.set_title('Unconditional facies realization', fontsize=10)
-ax3.set_title('Kriging estimate of data', fontsize=10)
-ax4.set_title('Kriging estimate of values\n simulated at data location', fontsize=10)
-ax5.set_title('Conditional gaussian realization', fontsize=10)
-ax6.set_title('Conditional facies realization', fontsize=10)
+ax3.set_title('Kriging estimate of data residuals', fontsize=10)
+ax4.set_title('Conditional gaussian realization', fontsize=10)
+ax5.set_title('Conditional facies realization', fontsize=10)
 divider1 = make_axes_locatable(ax1)
 divider2 = make_axes_locatable(ax2)
 divider3 = make_axes_locatable(ax3)
 divider4 = make_axes_locatable(ax4)
 divider5 = make_axes_locatable(ax5)
-divider6 = make_axes_locatable(ax6)
 cax1 = divider1.append_axes("right", size="3%", pad=0.2)
 cax2 = divider2.append_axes("right", size="3%", pad=0.2)
 cax3 = divider3.append_axes("right", size="3%", pad=0.2)
 cax4 = divider4.append_axes("right", size="3%", pad=0.2)
 cax5 = divider5.append_axes("right", size="5%", pad=0.2)
-cax6 = divider6.append_axes("right", size="5%", pad=0.2)
 cbar1 = plt.colorbar(im1, cax=cax1)
 cbar2 = plt.colorbar(im2, cax=cax2)
 cbar3 = plt.colorbar(im3, cax=cax3)
 cbar4 = plt.colorbar(im4, cax=cax4)
 cbar5 = plt.colorbar(im5, cax=cax5)
-cbar6 = plt.colorbar(im6, cax=cax6)
 
 plt.savefig('conditioningTG.png', dpi=300)
 

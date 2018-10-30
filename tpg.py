@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
+def simpleKrig_vector(x, y, v, xi, yi, model, mu, C0):
 	"""
 	Simple kriging (for more than one point)
 	
@@ -35,8 +35,8 @@ def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 	else:
 		X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
 		d = squareform(pdist(X))
-	C = C0 - variogram(varioType, d, C0, L)
-	c = np.transpose(C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L))
+	C = C0 - model.variogram(d)
+	c = np.transpose(C0 - model.variogram(np.sqrt((xi-x)**2 + (yi-y)**2)))
 #	l = solve(C, c)
 	l = lstsq(C, c)[0]
 
@@ -46,7 +46,7 @@ def simpleKrig_vector(x, y, v, xi, yi, varioType, L, mu, C0):
 	return v_est, v_var, l
 
 
-def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
+def simpleKrig(x, y, v, xi, yi, model, mu, C0):
 	"""
 	Simple kriging (for one point only)
 
@@ -68,8 +68,8 @@ def simpleKrig(x, y, v, xi, yi, varioType, L, mu, C0):
 	else:
 		X = np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
 		d = squareform(pdist(X))
-	C = C0 - variogram(varioType, d, C0, L)
-	c = C0 - variogram(varioType, np.sqrt((xi-x)**2 + (yi-y)**2), C0, L)
+	C = C0 - model.variogram(d)
+	c = C0 - model.variogram(np.sqrt((xi-x)**2 + (yi-y)**2))
 	l = solve(C,c)
 
 	v_est = np.sum(l*(v - mu)) + mu
@@ -1081,7 +1081,7 @@ def convertFacies2IniPseudoData_tpg_g2(faciesObs, rule_type):
 	return pseudoData
 
 
-def gibbsSampling(pseudoData_ini, x_faciesObs, y_faciesObs, thresholds, nbIter, it_st):
+def gibbsSampling(pseudoData_ini, model, x_faciesObs, y_faciesObs, thresholds, nbIter, it_st):
 	"""
 	"""
 
@@ -1105,12 +1105,12 @@ def gibbsSampling(pseudoData_ini, x_faciesObs, y_faciesObs, thresholds, nbIter, 
 	while j <= nbIter:
 		for i in np.arange(nbOfData):
 			if i == 0:
-				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], 'exponential', 15, 0, 1)
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(x_faciesObs[i+1:], y_faciesObs[i+1:], pseudoData_allIter[i+1:, j-1], x_faciesObs[i], y_faciesObs[i], model, 0, 1)
 				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
 				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
 				
 			else:
-				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(np.concatenate((x_faciesObs[0:i], x_faciesObs[i+1:])), np.concatenate((y_faciesObs[0:i], y_faciesObs[i+1:])), np.concatenate((pseudoData_est_allIter[0:i, j-1], pseudoData_est_allIter[i+1:, j-1])), x_faciesObs[i], y_faciesObs[i], 'spherical', 10, 0, 1)	
+				pseudoData_est_i, pseudoData_var_i, l_i = simpleKrig(np.concatenate((x_faciesObs[0:i], x_faciesObs[i+1:])), np.concatenate((y_faciesObs[0:i], y_faciesObs[i+1:])), np.concatenate((pseudoData_est_allIter[0:i, j-1], pseudoData_est_allIter[i+1:, j-1])), x_faciesObs[i], y_faciesObs[i], model, 0, 1)	
 				pseudoData_est_allIter[i, j-1] = pseudoData_est_i
 				pseudoData_var_allIter[i, j-1] = pseudoData_var_i
 		
