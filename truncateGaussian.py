@@ -9,11 +9,8 @@ import tpg
 
 # Simulate one continuous gaussian realization
 
-#isoModel = tpg.model_isotropic('spherical', 1, 10)
-#gaussian = tpg.genGaussian2DSim_SGSim_iso(30, 30, 1, 1, isoModel)
-
-anisoModel = tpg.model_anisotropic('exponential', 1, 10, 1, 0)
-gaussian = tpg.genGaussian2DSim_SGSim_aniso(30, 30, 1, 1, anisoModel)
+model = tpg.model('exponential', 1, 10, 0.3, 45)
+gaussian = tpg.genGaussian2DSim_SGSim(30, 30, 1, 1, model, 0)
 
 # Display generated gaussian realization
 plt.close()

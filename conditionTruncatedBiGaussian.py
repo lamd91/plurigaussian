@@ -43,10 +43,14 @@ it_st = 100 # iteration at which the distribution is sampled from (should be aft
 thresholds_g1 = [-0.1] # use the same thresholds as the ones used to obtain the reference
 thresholds_g2 = [0] # use the same thresholds as the ones used to obtain the reference
 thresholds = thresholds_g1 + thresholds_g2
+#model_g1 = tpg.model_isotropic('spherical', 1, 15) # model to represent spatial variability of in first gaussian realization
+#model_g2 = tpg.model_isotropic('spherical', 1, 10) # model to represent spatial variability of data in second gaussian realization
+model_g1 = tpg.model('exponential', 1, 15, 0.3, 0) # model to represent spatial variability of in first gaussian realization
+model_g2 = tpg.model('exponential', 1, 10, 0.5, 45) # model to represent spatial variability of data in second gaussian realization
 pseudoData_ini_g1 = tpg.convertFacies2IniPseudoData_tpg_g1(synFaciesData[:, 2], 2)
 pseudoData_ini_g2 = tpg.convertFacies2IniPseudoData_tpg_g2(synFaciesData[:, 2], 2)
-pseudoData_fin_g1 = tpg.gibbsSampling(pseudoData_ini_g1, synFaciesData[:, 0], synFaciesData[:, 1], thresholds_g1, it_max, it_st)
-pseudoData_fin_g2 = tpg.gibbsSampling(pseudoData_ini_g2, synFaciesData[:, 0], synFaciesData[:, 1], thresholds_g2, it_max, it_st)
+pseudoData_fin_g1 = tpg.gibbsSampling(pseudoData_ini_g1, model_g1, synFaciesData[:, 0], synFaciesData[:, 1], thresholds_g1, it_max, it_st)
+pseudoData_fin_g2 = tpg.gibbsSampling(pseudoData_ini_g2, model_g2, synFaciesData[:, 0], synFaciesData[:, 1], thresholds_g2, it_max, it_st)
 print(pseudoData_ini_g1)
 print(pseudoData_ini_g2)
 print(pseudoData_fin_g1)
@@ -62,32 +66,33 @@ gaussian2_uc = np.loadtxt('gaussian2_uc.txt')
 
 # Truncate both the unconditional gaussian realizations to one facies realization
 facies_uc = tpg.truncBiGaussian23facies(gaussian1_uc, gaussian2_uc, 2, thresholds)
+print('Observed/Simulated facies at data locations before hard conditioning')
 print(synFaciesData[:, 2])
 print(facies_uc[lineIndices_data, colIndices_data])
  
 # Compute kriging estimate of pseudo data for first realization  
 print(pseudoData_fin_g1.shape)
-sk_est_data_1, sk_var_data_1, sk_weights_data_1 = tpg.simpleKrig_vector(x_data, y_data, pseudoData_fin_g1, XX.reshape(-1, 1), YY.reshape(-1, 1), 'exponential', 15, 0, 1)
+sk_est_data_1, sk_var_data_1, sk_weights_data_1 = tpg.simpleKrig_vector(x_data, y_data, pseudoData_fin_g1, XX.reshape(-1, 1), YY.reshape(-1, 1), model_g1, 0, 1)
 sk_data_grid_1 = sk_est_data_1.reshape(NY, NX)
 #print(pseudoData)
 #print(sk_data_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
 
 # Compute kriging estimate of pseudo data for second realization
-sk_est_data_2, sk_var_data_2, sk_weights_data_2 = tpg.simpleKrig_vector(x_data, y_data, pseudoData_fin_g2, XX.reshape(-1, 1), YY.reshape(-1, 1), 'spherical', 10, 0, 1)
+sk_est_data_2, sk_var_data_2, sk_weights_data_2 = tpg.simpleKrig_vector(x_data, y_data, pseudoData_fin_g2, XX.reshape(-1, 1), YY.reshape(-1, 1), model_g2, 0, 1)
 sk_data_grid_2 = sk_est_data_2.reshape(NY, NX)
 #print(pseudoData)
 #print(sk_data_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
 
 # Compute kriging estimate of values simulated by first unconditional realization at data locations
 simData_dataLoc_1 = gaussian1_uc[lineIndices_data, colIndices_data]
-sk_est_simData_1, sk_var_simData_1, sk_weights_simData_1 = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc_1, XX.reshape(-1, 1), YY.reshape(-1, 1), 'exponential', 15, 0, 1)
+sk_est_simData_1, sk_var_simData_1, sk_weights_simData_1 = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc_1, XX.reshape(-1, 1), YY.reshape(-1, 1), model_g1, 0, 1)
 sk_simData_grid_1 = sk_est_simData_1.reshape(NY, NX)
 #print(simData_dataLoc)
 #print(sk_simData_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
 
 # Compute kriging estimate of values simulated by second unconditional realization at data locations
 simData_dataLoc_2 = gaussian2_uc[lineIndices_data, colIndices_data]
-sk_est_simData_2, sk_var_simData_2, sk_weights_simData_2 = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc_2, XX.reshape(-1, 1), YY.reshape(-1, 1), 'spherical', 10, 0, 1)
+sk_est_simData_2, sk_var_simData_2, sk_weights_simData_2 = tpg.simpleKrig_vector(x_data, y_data, simData_dataLoc_2, XX.reshape(-1, 1), YY.reshape(-1, 1), model_g2, 0, 1)
 sk_simData_grid_2 = sk_est_simData_2.reshape(NY, NX)
 #print(simData_dataLoc)
 #print(sk_simData_grid[lineIndices_data, colIndices_data]) # check kriged values at data locations
@@ -100,6 +105,7 @@ np.savetxt('gaussian2_c.txt', gaussian2_c)
 
 # Truncate conditional gaussian realization to facies
 facies_c = tpg.truncBiGaussian23facies(gaussian1_c, gaussian2_c, 2, thresholds)
+print('Observed/Simulated facies at data locations after hard conditioning')
 print(synFaciesData[:, 2])
 print(facies_c[lineIndices_data, colIndices_data])
 

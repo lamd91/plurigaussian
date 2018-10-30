@@ -41,7 +41,7 @@ lineIndices_data, colIndices_data = tpg.findDataCellCoordinates(x_data, y_data, 
 it_max = 200 # total number of iterations
 it_st = 100 # iteration at which the distribution is sampled from (should be after the burn-in period; check convergence)
 thresholds = [-0.78, -0.16] # use the same thresholds as the ones used to obtain the reference
-model = tpg.model_isotropic('spherical', 1, 10) # model to represent spatial variability of data
+model = tpg.model('exponential', 1, 10, 1, 0) # model to represent spatial variability of data
 pseudoData_ini = tpg.convertFacies2IniPseudoData_tg(synFaciesData[:, 2], thresholds)
 pseudoData = tpg.gibbsSampling(pseudoData_ini, model, synFaciesData[:, 0], synFaciesData[:, 1], thresholds, it_max, it_st)
 
