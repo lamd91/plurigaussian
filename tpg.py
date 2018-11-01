@@ -91,7 +91,7 @@ class model():
 		self.sill = sill 
 		self.maxRange = L_max
 		self.anisoRatio = aniso_ratio
-		self.rotAngle = angle
+		self.rotAngle = radians(angle)
 
 	def variogram(self, h_x, h_y):
 
@@ -240,7 +240,7 @@ def genGaussian2DSim_SGSim(NX, NY, dx, dy, model, mu):
 	# Variogram parameters
 	variogRange_max = model.maxRange # range of variogram in meters
 	variogRange_min = variogRange_max * model.anisoRatio # anisotropy factor
-	angle = radians(model.rotAngle) # rotation angle
+	angle = model.rotAngle # rotation angle
 	C0 = model.sill # data variance set equal to the imposed value 
 	mean = mu
 	var = C0
@@ -279,6 +279,7 @@ def genGaussian2DSim_SGSim(NX, NY, dx, dy, model, mu):
 		
 		for k in indices_alreadyVisitedCellsInsideWindow: # loop over simulated cells in the neighborhood of simulation cell
 			D = (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.cos(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.sin(angle))/variogRange_max)**2 + ((-(xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.sin(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.cos(angle))/variogRange_min)**2
+#			D = (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.cos(angle) + (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.sin(angle))/variogRange_max)**2 + (((xCoord_alreadyVisitedCells[k] - xCoord_visitedCell)*np.sin(angle) - (yCoord_alreadyVisitedCells[k] - yCoord_visitedCell)*np.cos(angle))/variogRange_min)**2 # equivalent to previous line
 			if D <= 1: # if already simulated point is within the cercle centered at simulation cell (neighborhood)
 				xCoord_alreadyVisitedCells_withinNeighborhood.append(xCoord_alreadyVisitedCells[k])
 				yCoord_alreadyVisitedCells_withinNeighborhood.append(yCoord_alreadyVisitedCells[k])
