@@ -6,7 +6,8 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-# Generate two continuous gaussian realizations using different variogram models
+# Generate/Load existing two continuous gaussian realizations using different variogram models
+
 #gaussian1 = tpg.genGaussian2DSim_FFT(120, 120, 0.5, 0.5, 'exponential', 30, 9)
 #model = tpg.model('spherical', 10, 0.5, 45)
 #gaussian2 = tpg.genGaussian2DSim_SGSim(120, 120, 0.5, 0.5, model, 0)
