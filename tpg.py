@@ -66,11 +66,12 @@ def simpleKrig(x, y, v, xi, yi, model, mu, C0):
 	""" 
 
 	n = x.shape[0]
+ 
 	if n==0:
 		d = 0;
 	else:
-		X_x = np.hstack((x[:, np.newaxis], np.zeros((9, 1))))
-		X_y = np.hstack((np.zeros((9, 1)), y[:, np.newaxis]))	
+		X_x = np.hstack((x[:, np.newaxis], np.zeros((n, 1))))
+		X_y = np.hstack((np.zeros((n, 1)), y[:, np.newaxis]))	
 		d_x = pdist(X_x).reshape((-1, 1))
 		d_y = pdist(X_y).reshape((-1, 1))
 
@@ -792,7 +793,7 @@ def truncGaussian2faciesUsingThresholds(gaussianGrid, thresholds):
 	return faciesGrid, [prop_facies1, prop_facies2, prop_facies3] 
 
 
-def createSynFaciesObs(NX, NY, dx, dy, nbOfData):
+def createRandomSynFaciesObs(NX, NY, dx, dy, nbOfData):
 	"""
 	"""
 
@@ -801,9 +802,10 @@ def createSynFaciesObs(NX, NY, dx, dy, nbOfData):
 	y_min = 0 # min y coordinate of data
 	y_max = NY*dy # max y coordinate of data
 
+	# Random coordinates
 	x_data = np.random.uniform(x_min, x_max, nbOfData)
 	y_data = np.random.uniform(y_min, y_max, nbOfData)
-	
+
 	return x_data, y_data
 
 
